@@ -47,29 +47,30 @@
       background: #0284c7 !important;
       border-color: #38bdf8 !important;
       color: #ffffff !important;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-28 md:pb-8">
+<body class="bg-slate-950 text-slate-100 min-h-screen md:h-screen md:overflow-hidden flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-24 md:pb-0">
 
-  <!-- ヘッダー -->
-  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 px-4 sm:px-8 py-3 pt-safe flex items-center justify-between shadow-sm">
+  <!-- ヘッダー (画面全幅) -->
+  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 px-4 md:px-8 py-3 pt-safe flex items-center justify-between shrink-0 shadow-sm">
     <div class="flex items-center space-x-3">
-      <span class="text-base md:text-xl font-extrabold text-white tracking-tight">cueWebApp</span>
-      <span id="autoSaveIndicator" class="text-[10px] md:text-xs font-mono-num text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 hidden sm:inline-block">自動保存中</span>
+      <span class="text-base md:text-xl font-black text-white tracking-tight">cueWebApp</span>
+      <span id="autoSaveIndicator" class="text-[11px] font-mono-num text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 hidden sm:inline-block">● 自動保存</span>
     </div>
 
     <!-- モード切り替え & JSON -->
     <div class="flex items-center gap-2 md:gap-3">
       <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs md:text-sm">
-        <button id="btnModePlay" class="touch-press px-3.5 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm">演奏</button>
-        <button id="btnModeEdit" class="touch-press px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200">編集</button>
-        <button id="btnModeFiles" class="touch-press px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200">ファイル</button>
+        <button id="btnModePlay" class="touch-press px-4 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm">演奏</button>
+        <button id="btnModeEdit" class="touch-press px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200">編集</button>
+        <button id="btnModeFiles" class="touch-press px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200">ファイル</button>
       </div>
 
       <div class="h-5 w-px bg-slate-800 mx-1 hidden sm:block"></div>
 
-      <label class="cursor-pointer text-xs md:text-sm px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONインポート">
+      <label class="cursor-pointer text-xs md:text-sm px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONインポート">
         <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
@@ -77,7 +78,7 @@
         <input type="file" id="jsonFileInput" accept=".json" class="hidden">
       </label>
 
-      <button id="downloadJsonBtn" class="text-xs md:text-sm px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONエクスポート">
+      <button id="downloadJsonBtn" class="text-xs md:text-sm px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONエクスポート">
         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
@@ -86,130 +87,128 @@
     </div>
   </header>
 
-  <!-- メインコンテンツ (PCでは広々2カラム、スマホでは1カラム) -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 md:p-8 flex flex-col gap-4">
+  <!-- メインコンテンツ (全幅ワイドレイアウト) -->
+  <main class="flex-1 w-full p-3 sm:p-5 md:p-6 flex flex-col gap-3 md:gap-4 md:overflow-hidden">
 
-    <!-- 音源ロードバー -->
-    <div id="dropZone" class="relative rounded-2xl border border-dashed border-slate-800 hover:border-cyan-500 bg-slate-900/40 p-3 md:p-4 transition cursor-pointer">
+    <!-- 上部: 音源ファイル情報バー -->
+    <div id="dropZone" class="relative rounded-xl border border-dashed border-slate-800 hover:border-cyan-500 bg-slate-900/40 p-2.5 md:p-3 transition cursor-pointer shrink-0">
       <input type="file" id="audioFileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
       
-      <div id="uploadPrompt" class="flex items-center justify-center gap-2 py-1 text-center">
-        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div id="uploadPrompt" class="flex items-center justify-center gap-2 py-0.5 text-center">
+        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <span class="text-xs md:text-sm font-semibold text-slate-300">音源を選択 または ドラッグ＆ドロップ</span>
+        <span class="text-xs md:text-sm font-semibold text-slate-300">音源を選択 または ドラッグ＆ドロップ (MP3 / WAV)</span>
       </div>
 
       <div id="fileLoadedInfo" class="hidden flex items-center justify-between">
-        <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-2.5 min-w-0">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0"></span>
-          <p id="loadedFileName" class="text-xs md:text-sm font-semibold text-slate-200 truncate font-mono-num">audio.mp3</p>
+          <p id="loadedFileName" class="text-xs md:text-sm font-bold text-slate-100 truncate font-mono-num">audio.mp3</p>
         </div>
         <button id="changeFileBtn" class="text-xs px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 relative z-20 border border-slate-700">音源変更</button>
       </div>
     </div>
 
-    <!-- PC/タブレット用レイアウト (md:以上で2カラム構成) -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-start">
-
-      <!-- 左カラム: プレイヤー & 波形 (PCでは固定・高視認性) -->
-      <div class="md:col-span-6 lg:col-span-5 flex flex-col gap-4">
-        
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 md:p-6 shadow-sm flex flex-col gap-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-500 uppercase bg-slate-950 px-2 py-1 rounded border border-slate-800">CUE</span>
-              <span id="activeMarkerLabel" class="text-lg md:text-2xl font-black text-cyan-400 font-mono-num tracking-wide">--</span>
-            </div>
-            <div class="flex items-baseline gap-1.5 font-mono-num">
-              <span id="currentTimeDisplay" class="text-2xl md:text-4xl font-black tracking-tight text-white">00:00.000</span>
-              <span class="text-slate-600 text-xs md:text-sm">/</span>
-              <span id="totalDurationDisplay" class="text-xs md:text-sm text-slate-400">00:00.000</span>
-            </div>
-          </div>
-
-          <!-- 波形表示 (PCではより大きく描画) -->
-          <div class="relative w-full h-20 md:h-32 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 cursor-pointer select-none touch-none" id="waveformContainer">
-            <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
-            <div id="playhead" class="absolute top-0 bottom-0 w-[2px] bg-cyan-400 pointer-events-none z-20 -translate-x-1/2 shadow-[0_0_10px_#22d3ee]" style="left: 0%;"></div>
-            <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
-          </div>
-
-          <!-- PC専用インラインコントローラー (PC表示時のみ現れるゆったりバー) -->
-          <div class="hidden md:flex items-center gap-3 pt-2">
-            <button id="btnPcRewind" class="touch-press flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-mono-num font-bold text-sm text-slate-200">-5s</button>
-            <button id="btnPcPlayPause" class="touch-press flex-[1.5] py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-base shadow flex items-center justify-center gap-2">
-              <span id="btnPcPlayText">再生</span>
-            </button>
-            <button id="btnPcForward" class="touch-press flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-mono-num font-bold text-sm text-slate-200">+5s</button>
-            <button id="btnPcAddMarker" class="touch-press flex-[2] py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow flex items-center justify-center gap-1.5">
-              <span>マーク追加 (M)</span>
-            </button>
-          </div>
+    <!-- プレイヤー & 巨大ワイド波形セクション -->
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 md:p-5 shadow-sm flex flex-col gap-3 shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-xs md:text-sm font-black text-slate-400 uppercase bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">CURRENT</span>
+          <span id="activeMarkerLabel" class="text-xl md:text-3xl font-black text-cyan-400 font-mono-num tracking-wide">--</span>
         </div>
 
+        <!-- コントロールボタン群 (PC画面では波形の真上に横並び配置) -->
+        <div class="hidden md:flex items-center gap-3">
+          <button id="btnPcRewind" class="touch-press px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-mono-num font-bold text-sm text-slate-200 shadow-sm">-5s</button>
+          
+          <button id="btnPcPlayPause" class="touch-press px-6 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow flex items-center gap-2">
+            <svg id="pcPlayIcon" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            <svg id="pcPauseIcon" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+            <span id="btnPcPlayText">再生</span>
+          </button>
+          
+          <button id="btnPcForward" class="touch-press px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-mono-num font-bold text-sm text-slate-200 shadow-sm">+5s</button>
+          
+          <button id="btnPcAddMarker" class="touch-press px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow flex items-center gap-1.5 ml-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+            <span>マーカー追加 (M)</span>
+          </button>
+        </div>
+
+        <div class="flex items-baseline gap-2 font-mono-num">
+          <span id="currentTimeDisplay" class="text-2xl md:text-4xl font-black tracking-tight text-white">00:00.000</span>
+          <span class="text-slate-600 text-sm">/</span>
+          <span id="totalDurationDisplay" class="text-sm md:text-base text-slate-400">00:00.000</span>
+        </div>
       </div>
 
-      <!-- 右カラム: モード別ビュー (演奏 / 編集 / ファイル) -->
-      <div class="md:col-span-6 lg:col-span-7 flex flex-col gap-3">
+      <!-- 横いっぱいに広がる超大型波形 -->
+      <div class="relative w-full h-20 md:h-36 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 cursor-pointer select-none touch-none" id="waveformContainer">
+        <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
+        <div id="playhead" class="absolute top-0 bottom-0 w-[2px] bg-cyan-400 pointer-events-none z-20 -translate-x-1/2 shadow-[0_0_12px_#22d3ee]" style="left: 0%;"></div>
+        <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
+      </div>
+    </div>
 
-        <!-- VIEW 1: 演奏モード (グリッドタイル) -->
-        <div id="playView" class="flex flex-col gap-3">
-          <div class="flex items-center justify-between px-1">
-            <span class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">CUE LIST</span>
-            <span class="text-xs text-slate-500">クリックで頭出し再生</span>
-          </div>
-          <div id="playTilesGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3.5">
-            <div id="emptyPlayMsg" class="col-span-full py-16 text-center text-slate-500 text-xs md:text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
-              マーカーがありません。「編集」タブで追加してください。
+    <!-- 下部: モード別表示エリア (画面高さいっぱいに伸びてスクロール) -->
+    <div class="flex-1 min-h-0 flex flex-col md:overflow-hidden">
+
+      <!-- VIEW 1: 演奏モード (PCでは多列・大型グリッドタイル) -->
+      <div id="playView" class="flex-1 flex flex-col gap-2 md:overflow-hidden">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">CUE PADS (クリックで即座に頭出し)</span>
+          <span class="text-xs text-slate-500 font-mono-num" id="playMarkerCount">0 個のキュー</span>
+        </div>
+        <div class="flex-1 md:overflow-y-auto pr-1">
+          <div id="playTilesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 pb-4">
+            <div id="emptyPlayMsg" class="col-span-full py-20 text-center text-slate-500 text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
+              マーカーがありません。「編集」タブで曲を聴きながら [M] キーで打刻してください。
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- VIEW 2: 編集モード (詳細リスト) -->
-        <div id="editView" class="hidden flex flex-col gap-3">
-          <div class="flex items-center justify-between px-1">
-            <span class="text-xs md:text-sm font-bold text-slate-400">登録マーカー (<span id="markerCountBadge">0</span>)</span>
-            <div class="flex items-center gap-2">
-              <button id="sortMarkersBtn" class="touch-press text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">整列</button>
-              <button id="clearAllMarkersBtn" class="touch-press text-xs px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40">全消去</button>
-            </div>
-          </div>
-
-          <div id="markersList" class="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">
-            <div id="emptyMarkersMsg" class="py-16 text-center text-slate-500 text-xs md:text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
-              マーカーがありません。「追加」ボタンまたは [M] キーで打刻してください。
-            </div>
+      <!-- VIEW 2: 編集モード (PCでは広々グリッド形式でマーカー一覧) -->
+      <div id="editView" class="hidden flex-1 flex flex-col gap-2 md:overflow-hidden">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs md:text-sm font-bold text-slate-400">登録マーカー (<span id="markerCountBadge">0</span>)</span>
+          <div class="flex items-center gap-2">
+            <button id="sortMarkersBtn" class="touch-press text-xs md:text-sm px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">時間順に整列</button>
+            <button id="clearAllMarkersBtn" class="touch-press text-xs md:text-sm px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40">全消去</button>
           </div>
         </div>
 
-        <!-- VIEW 3: ファイル管理モード -->
-        <div id="filesView" class="hidden flex flex-col gap-3">
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-xs md:text-sm font-bold text-slate-200">ブラウザ内ストレージ</h2>
-              <p class="text-[11px] md:text-xs text-slate-400 mt-0.5">音源とマーカーはすべてブラウザへ自動保存されています。</p>
+        <div class="flex-1 md:overflow-y-auto pr-1 pb-4">
+          <!-- PCでは2カラム、大型ディスプレイでは3カラムで並ぶマーカーカード -->
+          <div id="markersList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div id="emptyMarkersMsg" class="col-span-full py-20 text-center text-slate-500 text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
+              マーカーがありません。「マーカー追加」ボタンまたは [M] キーで打刻してください。
             </div>
           </div>
+        </div>
+      </div>
 
-          <div class="flex items-center justify-between px-1">
-            <span class="text-xs md:text-sm font-semibold text-slate-400">保存済み一覧 (<span id="savedCountBadge">0</span>)</span>
-          </div>
+      <!-- VIEW 3: ファイル管理モード -->
+      <div id="filesView" class="hidden flex-1 flex flex-col gap-3 md:overflow-hidden">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs md:text-sm font-semibold text-slate-400">ブラウザ保存済み一覧 (<span id="savedCountBadge">0</span>)</span>
+        </div>
 
-          <div id="savedProjectsList" class="flex flex-col gap-2">
-            <div id="emptyFilesMsg" class="py-16 text-center text-slate-500 text-xs md:text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
+        <div class="flex-1 md:overflow-y-auto pr-1 pb-4">
+          <div id="savedProjectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div id="emptyFilesMsg" class="col-span-full py-20 text-center text-slate-500 text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
               保存されたプロジェクトはありません。
             </div>
           </div>
         </div>
-
       </div>
 
     </div>
 
   </main>
 
-  <!-- スマホ専用 ボトムコントローラー (PC画面では非表示) -->
+  <!-- スマホ専用 ボトムコントローラー (PC画面 md:以上では非表示) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-4 py-2.5 pb-safe md:hidden shadow-lg">
     <div class="max-w-md mx-auto flex items-center gap-2">
       <button id="btnRewind5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0">
@@ -217,12 +216,8 @@
       </button>
 
       <button id="btnPlayPause" class="touch-press w-14 h-12 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0 shadow font-bold">
-        <svg id="playIcon" class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" />
-        </svg>
-        <svg id="pauseIcon" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24">
-          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-        </svg>
+        <svg id="playIcon" class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+        <svg id="pauseIcon" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
       </button>
 
       <button id="btnForward5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0">
@@ -230,9 +225,7 @@
       </button>
 
       <button id="btnAddMarkerBtn" class="touch-press flex-1 h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center justify-center gap-1.5 px-3 shadow text-xs">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-        </svg>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
         <span>追加 (M)</span>
       </button>
     </div>
@@ -273,6 +266,7 @@
     const totalDurationDisplay = document.getElementById('totalDurationDisplay');
     const activeMarkerLabel = document.getElementById('activeMarkerLabel');
     const markerCountBadge = document.getElementById('markerCountBadge');
+    const playMarkerCount = document.getElementById('playMarkerCount');
     const savedCountBadge = document.getElementById('savedCountBadge');
 
     const waveformCanvas = document.getElementById('waveformCanvas');
@@ -289,6 +283,8 @@
     const btnAddMarkerBtn = document.getElementById('btnAddMarkerBtn');
 
     const btnPcPlayPause = document.getElementById('btnPcPlayPause');
+    const pcPlayIcon = document.getElementById('pcPlayIcon');
+    const pcPauseIcon = document.getElementById('pcPauseIcon');
     const btnPcPlayText = document.getElementById('btnPcPlayText');
     const btnPcRewind = document.getElementById('btnPcRewind');
     const btnPcForward = document.getElementById('btnPcForward');
@@ -420,21 +416,21 @@
 
       projects.sort((a, b) => b.updatedAt - a.updatedAt).forEach(proj => {
         const item = document.createElement('div');
-        item.className = 'rounded-xl border border-slate-800 bg-slate-900/90 p-3 md:p-4 flex items-center justify-between gap-3';
+        item.className = 'rounded-2xl border border-slate-800 bg-slate-900/90 p-4 flex items-center justify-between gap-3 shadow-sm';
         const dateStr = new Date(proj.updatedAt).toLocaleDateString('ja-JP', {
           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
         item.innerHTML = `
           <div class="min-w-0 flex-1">
-            <h3 class="text-xs md:text-sm font-bold text-white truncate font-mono-num">${escapeHtml(proj.title)}</h3>
-            <p class="text-[11px] md:text-xs text-slate-400 mt-0.5">マーカー ${proj.markers ? proj.markers.length : 0} 個 ・ ${dateStr}</p>
+            <h3 class="text-sm font-bold text-white truncate font-mono-num">${escapeHtml(proj.title)}</h3>
+            <p class="text-xs text-slate-400 mt-1">マーカー ${proj.markers ? proj.markers.length : 0} 個 ・ ${dateStr}</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <button data-id="${proj.id}" class="btn-load-proj touch-press px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs md:text-sm shadow-sm">
+            <button data-id="${proj.id}" class="btn-load-proj touch-press px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs md:text-sm shadow-sm">
               開く
             </button>
-            <button data-id="${proj.id}" class="btn-del-proj touch-press p-2 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300">
+            <button data-id="${proj.id}" class="btn-del-proj touch-press p-2 rounded-xl bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
@@ -459,20 +455,20 @@
       state.mode = mode;
       [playView, editView, filesView].forEach(v => v.classList.add('hidden'));
       [btnModePlay, btnModeEdit, btnModeFiles].forEach(b => {
-        b.className = 'touch-press px-3.5 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200';
+        b.className = 'touch-press px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-slate-200';
       });
 
       if (mode === 'play') {
         playView.classList.remove('hidden');
-        btnModePlay.className = 'touch-press px-3.5 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
+        btnModePlay.className = 'touch-press px-4 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
         renderPlayTiles();
       } else if (mode === 'edit') {
         editView.classList.remove('hidden');
-        btnModeEdit.className = 'touch-press px-3.5 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
+        btnModeEdit.className = 'touch-press px-4 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
         renderMarkersList();
       } else if (mode === 'files') {
         filesView.classList.remove('hidden');
-        btnModeFiles.className = 'touch-press px-3.5 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
+        btnModeFiles.className = 'touch-press px-4 py-1.5 rounded-lg font-bold transition bg-cyan-600 text-white shadow-sm';
         loadSavedProjectsList();
       }
     }
@@ -632,7 +628,7 @@
         pin.className = 'absolute top-0 bottom-0 pointer-events-none -translate-x-1/2 flex flex-col items-center';
         pin.style.left = `${pct}%`;
         pin.innerHTML = `
-          <div class="px-1.5 rounded bg-amber-400 text-slate-950 font-black text-[9px] md:text-[10px] font-mono-num leading-tight shadow">
+          <div class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px] md:text-xs font-mono-num leading-tight shadow">
             ${escapeHtml(m.label)}
           </div>
           <div class="w-px h-full bg-amber-400/80"></div>
@@ -645,10 +641,14 @@
       if (isPlaying) {
         playIcon.classList.add('hidden');
         pauseIcon.classList.remove('hidden');
+        pcPlayIcon.classList.add('hidden');
+        pcPauseIcon.classList.remove('hidden');
         btnPcPlayText.textContent = '停止';
       } else {
         playIcon.classList.remove('hidden');
         pauseIcon.classList.add('hidden');
+        pcPlayIcon.classList.remove('hidden');
+        pcPauseIcon.classList.add('hidden');
         btnPcPlayText.textContent = '再生';
       }
     }
@@ -753,6 +753,8 @@
     }
 
     function renderPlayTiles() {
+      playMarkerCount.textContent = `${state.markers.length} 個のキュー`;
+
       if (state.markers.length === 0) {
         emptyPlayMsg.classList.remove('hidden');
         playTilesGrid.innerHTML = '';
@@ -764,12 +766,12 @@
 
       state.markers.forEach((m, idx) => {
         const btn = document.createElement('button');
-        btn.className = `play-tile touch-press py-3 md:py-5 px-3 rounded-2xl border border-slate-800 bg-slate-900/90 text-slate-200 transition flex flex-col items-center justify-center gap-1 shadow-sm ${
+        btn.className = `play-tile touch-press py-4 md:py-6 px-3 rounded-2xl border border-slate-800 bg-slate-900/90 text-slate-200 transition flex flex-col items-center justify-center gap-1.5 shadow-sm ${
           idx === state.currentMarkerIndex ? 'active-tile' : ''
         }`;
         btn.innerHTML = `
-          <span class="text-lg md:text-2xl font-black font-mono-num leading-tight">${escapeHtml(m.label)}</span>
-          <span class="text-[11px] md:text-xs text-slate-400 font-mono-num">${formatTimeMs(m.timeMs)}</span>
+          <span class="text-xl md:text-3xl font-black font-mono-num leading-tight">${escapeHtml(m.label)}</span>
+          <span class="text-xs md:text-sm text-slate-400 font-mono-num">${formatTimeMs(m.timeMs)}</span>
         `;
         btn.addEventListener('click', () => jumpToMarker(idx));
         playTilesGrid.appendChild(btn);
@@ -829,21 +831,21 @@
 
       state.markers.forEach((marker, index) => {
         const row = document.createElement('div');
-        row.className = 'rounded-xl border border-slate-800 bg-slate-900/60 px-3.5 py-2 flex items-center justify-between gap-3 text-xs md:text-sm';
+        row.className = 'rounded-xl border border-slate-800 bg-slate-900/80 p-3 flex items-center justify-between gap-3 text-xs md:text-sm shadow-sm';
         
         row.innerHTML = `
           <div class="flex items-center gap-2.5 flex-1 min-w-0">
             <span class="text-slate-500 font-mono-num text-xs w-5 text-right font-semibold">${index + 1}</span>
             <input type="text" value="${escapeHtml(marker.label)}" 
               data-id="${marker.id}"
-              class="marker-label-input w-24 md:w-32 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-slate-100 font-bold font-mono-num">
-            <span class="font-mono-num text-cyan-400 font-semibold">${formatTimeMs(marker.timeMs)}</span>
+              class="marker-label-input w-24 md:w-32 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-100 font-black font-mono-num">
+            <span class="font-mono-num text-cyan-400 font-bold">${formatTimeMs(marker.timeMs)}</span>
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
-            <button data-id="${marker.id}" data-step="-100" class="btn-nudge px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-xs">-0.1s</button>
-            <button data-id="${marker.id}" data-step="100" class="btn-nudge px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-xs">+0.1s</button>
-            <button data-id="${marker.id}" class="btn-play-from px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs">再生</button>
+            <button data-id="${marker.id}" data-step="-100" class="btn-nudge px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-xs">-0.1s</button>
+            <button data-id="${marker.id}" data-step="100" class="btn-nudge px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-xs">+0.1s</button>
+            <button data-id="${marker.id}" class="btn-play-from px-3.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">再生</button>
             <button data-id="${marker.id}" class="btn-delete p-1 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 text-xs" title="削除">✕</button>
           </div>
         `;
@@ -918,7 +920,7 @@
       renderMarkerPins();
       renderPlayTiles();
       triggerAutoSave();
-      showToast('整列しました');
+      showToast('時間順に整列しました');
     });
 
     clearAllMarkersBtn.addEventListener('click', () => {
