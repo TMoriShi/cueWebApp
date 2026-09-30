@@ -15,7 +15,7 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    input, textarea {
+    input, textarea, select {
       user-select: text;
     }
     .font-mono-num {
@@ -87,7 +87,7 @@
     </div>
   </header>
 
-  <!-- メインコンテンツ (全幅ワイドレイアウト) -->
+  <!-- メインコンテンツ -->
   <main class="flex-1 w-full p-3 sm:p-5 md:p-6 flex flex-col gap-3 md:gap-4 md:overflow-hidden">
 
     <!-- 上部: 音源ファイル情報バー -->
@@ -111,15 +111,49 @@
     </div>
 
     <!-- プレイヤー & 巨大ワイド波形セクション -->
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 md:p-5 shadow-sm flex flex-col gap-3 shrink-0">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 md:p-5 shadow-sm flex flex-col gap-3 shrink-0">
+      
+      <!-- スマホ用助走再生バー (md未満で表示) -->
+      <div class="flex md:hidden items-center justify-between bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+        <button id="btnMobilePrerollToggle" class="touch-press px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
+          <span id="mobilePrerollDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span>助走再生</span>
+        </button>
+        <div class="flex items-center gap-1 text-xs">
+          <span class="text-slate-400 text-[11px]">助走:</span>
+          <select id="mobilePrerollSecSelect" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-mono-num font-bold focus:outline-none">
+            <option value="1">1秒前</option>
+            <option value="2" selected>2秒前</option>
+            <option value="3">3秒前</option>
+            <option value="4">4秒前</option>
+            <option value="5">5秒前</option>
+          </select>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="text-xs md:text-sm font-black text-slate-400 uppercase bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">CURRENT</span>
           <span id="activeMarkerLabel" class="text-xl md:text-3xl font-black text-cyan-400 font-mono-num tracking-wide">--</span>
         </div>
 
-        <!-- コントロールボタン群 (PC画面では波形の真上に横並び配置) -->
+        <!-- コントロールボタン群 (PC画面: 波形の真上) -->
         <div class="hidden md:flex items-center gap-3">
+          <!-- PC用 助走再生 (プレロール) コントロール -->
+          <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 mr-2">
+            <button id="btnPcPrerollToggle" class="touch-press px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
+              <span id="pcPrerollDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+              <span>助走再生</span>
+            </button>
+            <select id="pcPrerollSecSelect" class="bg-transparent text-cyan-300 font-mono-num font-bold text-xs px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="1" class="bg-slate-900 text-white">1秒前</option>
+              <option value="2" selected class="bg-slate-900 text-white">2秒前</option>
+              <option value="3" class="bg-slate-900 text-white">3秒前</option>
+              <option value="4" class="bg-slate-900 text-white">4秒前</option>
+              <option value="5" class="bg-slate-900 text-white">5秒前</option>
+            </select>
+          </div>
+
           <button id="btnPcRewind" class="touch-press px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-mono-num font-bold text-sm text-slate-200 shadow-sm">-5s</button>
           
           <button id="btnPcPlayPause" class="touch-press px-6 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow flex items-center gap-2">
@@ -151,10 +185,10 @@
       </div>
     </div>
 
-    <!-- 下部: モード別表示エリア (画面高さいっぱいに伸びてスクロール) -->
+    <!-- 下部: モード別表示エリア -->
     <div class="flex-1 min-h-0 flex flex-col md:overflow-hidden">
 
-      <!-- VIEW 1: 演奏モード (PCでは多列・大型グリッドタイル) -->
+      <!-- VIEW 1: 演奏モード -->
       <div id="playView" class="flex-1 flex flex-col gap-2 md:overflow-hidden">
         <div class="flex items-center justify-between px-1">
           <span class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">CUE PADS (クリックで即座に頭出し)</span>
@@ -169,7 +203,7 @@
         </div>
       </div>
 
-      <!-- VIEW 2: 編集モード (PCでは広々グリッド形式でマーカー一覧) -->
+      <!-- VIEW 2: 編集モード -->
       <div id="editView" class="hidden flex-1 flex flex-col gap-2 md:overflow-hidden">
         <div class="flex items-center justify-between px-1">
           <span class="text-xs md:text-sm font-bold text-slate-400">登録マーカー (<span id="markerCountBadge">0</span>)</span>
@@ -180,7 +214,6 @@
         </div>
 
         <div class="flex-1 md:overflow-y-auto pr-1 pb-4">
-          <!-- PCでは2カラム、大型ディスプレイでは3カラムで並ぶマーカーカード -->
           <div id="markersList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
             <div id="emptyMarkersMsg" class="col-span-full py-20 text-center text-slate-500 text-sm rounded-2xl border border-dashed border-slate-800/80 bg-slate-900/40">
               マーカーがありません。「マーカー追加」ボタンまたは [M] キーで打刻してください。
@@ -208,7 +241,7 @@
 
   </main>
 
-  <!-- スマホ専用 ボトムコントローラー (PC画面 md:以上では非表示) -->
+  <!-- スマホ専用 ボトムコントローラー (md以上では非表示) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-4 py-2.5 pb-safe md:hidden shadow-lg">
     <div class="max-w-md mx-auto flex items-center gap-2">
       <button id="btnRewind5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0">
@@ -247,7 +280,9 @@
       audioBlob: null,
       markers: [],
       nextLabelIndex: 0,
-      currentMarkerIndex: -1
+      currentMarkerIndex: -1,
+      prerollEnabled: false, // 助走再生ON/OFF
+      prerollSec: 2.0        // 助走秒数 (デフォルト2秒)
     };
 
     let audioCtx = null;
@@ -273,6 +308,14 @@
     const waveformContainer = document.getElementById('waveformContainer');
     const playhead = document.getElementById('playhead');
     const markerPinsOverlay = document.getElementById('markerPinsOverlay');
+
+    // 助走再生 (プレロール) UI
+    const btnPcPrerollToggle = document.getElementById('btnPcPrerollToggle');
+    const pcPrerollDot = document.getElementById('pcPrerollDot');
+    const pcPrerollSecSelect = document.getElementById('pcPrerollSecSelect');
+    const btnMobilePrerollToggle = document.getElementById('btnMobilePrerollToggle');
+    const mobilePrerollDot = document.getElementById('mobilePrerollDot');
+    const mobilePrerollSecSelect = document.getElementById('mobilePrerollSecSelect');
 
     // コントローラー (スマホ/PC)
     const btnPlayPause = document.getElementById('btnPlayPause');
@@ -313,9 +356,62 @@
     const toastMsg = document.getElementById('toastMsg');
 
     // ==========================================
+    // 助走再生 (プレロール) コントロール同期
+    // ==========================================
+    function updatePrerollUI() {
+      const activeClass = ['bg-emerald-950/60', 'text-emerald-300', 'border-emerald-700/60'];
+      const inactiveClass = ['bg-slate-800', 'text-slate-400', 'border-slate-700'];
+
+      if (state.prerollEnabled) {
+        [btnPcPrerollToggle, btnMobilePrerollToggle].forEach(btn => {
+          btn.classList.remove(...inactiveClass);
+          btn.classList.add(...activeClass);
+        });
+        [pcPrerollDot, mobilePrerollDot].forEach(dot => {
+          dot.classList.remove('bg-slate-500');
+          dot.classList.add('bg-emerald-400');
+        });
+      } else {
+        [btnPcPrerollToggle, btnMobilePrerollToggle].forEach(btn => {
+          btn.classList.remove(...activeClass);
+          btn.classList.add(...inactiveClass);
+        });
+        [pcPrerollDot, mobilePrerollDot].forEach(dot => {
+          dot.classList.remove('bg-emerald-400');
+          dot.classList.add('bg-slate-500');
+        });
+      }
+
+      pcPrerollSecSelect.value = String(state.prerollSec);
+      mobilePrerollSecSelect.value = String(state.prerollSec);
+    }
+
+    function togglePreroll() {
+      state.prerollEnabled = !state.prerollEnabled;
+      updatePrerollUI();
+      triggerAutoSave();
+      showToast(state.prerollEnabled ? `助走再生 ON: ${state.prerollSec}秒前から再生` : '助走再生 OFF');
+    }
+
+    btnPcPrerollToggle.addEventListener('click', togglePreroll);
+    btnMobilePrerollToggle.addEventListener('click', togglePreroll);
+
+    function onPrerollSecChange(e) {
+      state.prerollSec = parseFloat(e.target.value) || 2.0;
+      updatePrerollUI();
+      triggerAutoSave();
+      if (state.prerollEnabled) {
+        showToast(`助走秒数を ${state.prerollSec} 秒に変更しました`);
+      }
+    }
+
+    pcPrerollSecSelect.addEventListener('change', onPrerollSecChange);
+    mobilePrerollSecSelect.addEventListener('change', onPrerollSecChange);
+
+    // ==========================================
     // IndexedDB 自動保存システム
     // ==========================================
-    const DB_NAME = 'CueWebAppDB_v2';
+    const DB_NAME = 'CueWebAppDB_v3';
     const DB_VERSION = 1;
     const STORE_NAME = 'saved_songs';
     const LAST_OPENED_KEY = 'last_opened_project_id';
@@ -347,6 +443,8 @@
             title: state.audioFileName,
             audioBlob: state.audioBlob,
             markers: state.markers,
+            prerollEnabled: state.prerollEnabled,
+            prerollSec: state.prerollSec,
             updatedAt: Date.now()
           };
           const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -383,6 +481,10 @@
         state.markers = p.markers || [];
         state.markers.sort((a, b) => a.timeMs - b.timeMs);
         state.nextLabelIndex = state.markers.length;
+        if (p.prerollEnabled !== undefined) state.prerollEnabled = p.prerollEnabled;
+        if (p.prerollSec !== undefined) state.prerollSec = p.prerollSec;
+        updatePrerollUI();
+
         localStorage.setItem(LAST_OPENED_KEY, p.id);
         
         await loadAudioFile(new File([p.audioBlob], `${p.title}.mp3`, { type: p.audioBlob.type }), false);
@@ -745,11 +847,22 @@
       isScrubbing = false;
     });
 
+    // 助走再生を考慮したマーカージャンプ
     function jumpToMarker(index) {
       if (!audioElement.src || !state.markers[index]) return;
-      audioElement.currentTime = state.markers[index].timeMs / 1000;
+      
+      let targetSec = state.markers[index].timeMs / 1000;
+      if (state.prerollEnabled && state.prerollSec > 0) {
+        targetSec = Math.max(0, targetSec - state.prerollSec);
+      }
+
+      audioElement.currentTime = targetSec;
       audioElement.play().then(() => setPlaybackUI(true));
       updateProgress();
+      
+      if (state.prerollEnabled) {
+        showToast(`「${state.markers[index].label}」へ (${state.prerollSec}秒助走)`);
+      }
     }
 
     function renderPlayTiles() {
@@ -881,8 +994,13 @@
             renderMarkerPins();
             renderPlayTiles();
             triggerAutoSave();
+            
+            let targetSec = m.timeMs / 1000;
+            if (state.prerollEnabled && state.prerollSec > 0) {
+              targetSec = Math.max(0, targetSec - state.prerollSec);
+            }
             if (audioElement.src) {
-              audioElement.currentTime = m.timeMs / 1000;
+              audioElement.currentTime = targetSec;
               audioElement.play().then(() => setPlaybackUI(true));
               updateProgress();
             }
@@ -895,7 +1013,11 @@
           const id = btn.getAttribute('data-id');
           const m = state.markers.find(x => x.id === id);
           if (m && audioElement.src) {
-            audioElement.currentTime = m.timeMs / 1000;
+            let targetSec = m.timeMs / 1000;
+            if (state.prerollEnabled && state.prerollSec > 0) {
+              targetSec = Math.max(0, targetSec - state.prerollSec);
+            }
+            audioElement.currentTime = targetSec;
             audioElement.play().then(() => setPlaybackUI(true));
             updateProgress();
           }
@@ -1014,6 +1136,7 @@
 
     // 起動時: 最後に開いていたプロジェクトを自動復元
     window.addEventListener('DOMContentLoaded', async () => {
+      updatePrerollUI();
       loadSavedProjectsList();
       const lastId = localStorage.getItem(LAST_OPENED_KEY);
       if (lastId) {
