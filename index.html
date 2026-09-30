@@ -3,20 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>吹奏楽練習用 楽曲マーカー作成ツール & プレイヤー</title>
+  <title>Cue Web App - Audio Marker Tool</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <style>
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-    input, textarea, [contenteditable] {
-      user-select: text;
     }
     .font-mono-num {
       font-family: 'JetBrains Mono', monospace;
@@ -40,406 +36,169 @@
       border-radius: 9999px;
     }
     .touch-press:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
       transition: transform 0.08s ease;
-    }
-    /* 演奏モード中の発光アニメーション */
-    @keyframes pulse-glow {
-      0%, 100% {
-        box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), inset 0 0 15px rgba(16, 185, 129, 0.2);
-        border-color: #10b981;
-      }
-      50% {
-        box-shadow: 0 0 25px rgba(16, 185, 129, 0.7), inset 0 0 25px rgba(16, 185, 129, 0.35);
-        border-color: #34d399;
-      }
-    }
-    .active-marker-tile {
-      animation: pulse-glow 2s infinite ease-in-out;
-      background: linear-gradient(135deg, rgba(6, 78, 59, 0.85), rgba(15, 23, 42, 0.95)) !important;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-28 md:pb-6">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-24 md:pb-6">
 
-  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 py-2 pt-safe flex items-center justify-between shadow-md">
-    <div class="flex items-center space-x-2">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-        </svg>
+  <!-- ヘッダー -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-2.5 pt-safe flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-bold text-white text-base shadow-sm">
+        C
       </div>
       <div>
-        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5 leading-none">
-          <span>Marker Tool</span>
-          <span id="currentModeBadge" class="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">🎺 演奏練習</span>
-        </h1>
-        <p id="subTitleHeader" class="text-[10px] text-slate-400 truncate max-w-[120px] sm:max-w-none mt-0.5">吹奏楽パート練習</p>
+        <h1 class="text-sm font-bold text-white tracking-tight leading-none">cueWebApp</h1>
+        <p class="text-[11px] text-slate-400 mt-0.5">楽曲キュー / マーカー設定ツール</p>
       </div>
     </div>
 
-    <!-- モード切り替えタブスイッチ (ヘッダー中央/右) -->
-    <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-      <button id="btnSwitchPlayMode" class="touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md">
-        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" />
-        </svg>
-        <span>演奏</span>
-      </button>
-
-      <button id="btnSwitchEditMode" class="touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        <span>編集</span>
-      </button>
-    </div>
-
-    <div class="flex items-center gap-1">
-      <label class="cursor-pointer text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition flex items-center" title="JSONインポート">
-        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- JSON操作ボタン群 -->
+    <div class="flex items-center gap-2">
+      <label class="cursor-pointer text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5" title="JSONインポート">
+        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
+        <span>インポート</span>
         <input type="file" id="jsonFileInput" accept=".json" class="hidden">
       </label>
 
-      <button id="showShortcutsBtn" class="text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition" title="操作ヘルプ">
-        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <button id="downloadJsonBtn" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-medium transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
+        <span>エクスポート</span>
       </button>
     </div>
   </header>
 
-  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-3.5">
+  <!-- メインコンテンツ -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
 
-    <!-- 音源ロードバー -->
-    <div id="dropZone" class="relative rounded-xl border border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/60 p-2 sm:p-3 transition group cursor-pointer shadow-sm">
-      <input type="file" id="audioFileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+    <!-- 音源ロード / ファイルバー -->
+    <div id="dropZone" class="relative rounded-xl border border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/60 p-3 transition cursor-pointer">
+      <input type="file" id="audioFileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
       
       <div id="uploadPrompt" class="flex items-center justify-center gap-2 py-1 text-center">
-        <div class="w-7 h-7 rounded-lg bg-cyan-950/80 text-cyan-400 flex items-center justify-center shrink-0">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-          </svg>
-        </div>
-        <p class="text-xs font-semibold text-slate-200">タップして音源を選択 (MP3/WAV/M4A)</p>
+        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+        <span class="text-xs font-semibold text-slate-300">音源ファイルを選択 または ドラッグ＆ドロップ (MP3 / WAV / M4A)</span>
       </div>
 
       <div id="fileLoadedInfo" class="hidden flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400 shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <div class="truncate">
-            <p id="loadedFileName" class="text-xs font-semibold text-slate-100 truncate">audio.mp3</p>
-          </div>
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <p id="loadedFileName" class="text-xs font-semibold text-slate-200 truncate font-mono-num">audio.mp3</p>
         </div>
-        <button id="changeFileBtn" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 relative z-30 shrink-0 border border-slate-700">音源変更</button>
+        <button id="changeFileBtn" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 relative z-20 border border-slate-700">ファイル変更</button>
       </div>
     </div>
 
-    <!-- 共通：コンパクト再生ステータス & タイムカウンター -->
-    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-lg flex flex-col gap-2.5">
+    <!-- プレイヤー & 波形表示 -->
+    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-sm flex flex-col gap-3">
       <div class="flex items-center justify-between">
-        <!-- 現在再生中のマーク標示 -->
         <div class="flex items-center gap-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">MARK</span>
-          <span id="activeMarkerLabel" class="text-base sm:text-lg font-black text-amber-400 font-mono-num tracking-wide">--</span>
+          <span class="text-[10px] uppercase font-bold text-slate-400 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">CUE</span>
+          <span id="activeMarkerLabel" class="text-base font-bold text-cyan-400 font-mono-num">--</span>
         </div>
-
-        <!-- タイム表示 -->
         <div class="flex items-baseline gap-1.5 font-mono-num">
-          <span id="currentTimeDisplay" class="text-2xl sm:text-3xl font-black tracking-tight text-cyan-400">00:00.000</span>
+          <span id="currentTimeDisplay" class="text-2xl font-bold tracking-tight text-white">00:00.000</span>
           <span class="text-slate-600 text-xs">/</span>
           <span id="totalDurationDisplay" class="text-xs text-slate-400">00:00.000</span>
         </div>
       </div>
 
-      <!-- 波形バー (タッチスクラブ対応) -->
-      <div class="relative w-full h-16 sm:h-20 bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 cursor-pointer select-none touch-none" id="waveformContainer">
+      <!-- 波形 & 再生位置 (シーク可能) -->
+      <div class="relative w-full h-16 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 cursor-pointer select-none touch-none" id="waveformContainer">
         <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
-        <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-cyan-400 pointer-events-none z-20 shadow-[0_0_8px_#22d3ee]" style="left: 0%;"></div>
-        <div id="hoverHead" class="absolute top-0 bottom-0 w-px bg-white/40 pointer-events-none hidden z-10"></div>
-        <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-15"></div>
+        <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-cyan-400 pointer-events-none z-20 shadow-[0_0_6px_#22d3ee]" style="left: 0%;"></div>
+        <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-10"></div>
       </div>
     </div>
 
-    <!-- ==============================================
-         【MODE 1: 演奏練習モード (Play/Rehearsal Mode)】
-         超大型グリッドボタンで片手タップ特化
-         ============================================== -->
-    <div id="viewPlayMode" class="flex flex-col gap-3">
-
-      <!-- 演奏練習サポートオプションバー -->
-      <div class="grid grid-cols-2 gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-800/80">
-        <!-- 2秒前から再生トグル (合奏前の息継ぎ・準備用) -->
-        <button id="togglePrerollBtn" class="touch-press py-2 px-2.5 rounded-lg border text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-800 text-slate-300 border-slate-700">
-          <span id="prerollIndicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
-          <span>助走 -2s (Pre-roll)</span>
-        </button>
-
-        <!-- 再生速度選択 -->
-        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs">
-          <span class="text-slate-400 font-semibold">再生速度</span>
-          <select id="playbackRateSelect" class="bg-transparent text-cyan-300 font-extrabold focus:outline-none cursor-pointer">
-            <option value="0.7" class="bg-slate-900 text-white">0.7x (ゆっくり)</option>
-            <option value="0.8" class="bg-slate-900 text-white">0.8x</option>
-            <option value="0.9" class="bg-slate-900 text-white">0.9x</option>
-            <option value="1.0" selected class="bg-slate-900 text-white">1.0x (原曲)</option>
-            <option value="1.1" class="bg-slate-900 text-white">1.1x</option>
-          </select>
+    <!-- マーカー管理セクション -->
+    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-sm flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">マーカーリスト</h2>
+          <span id="markerCountBadge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-cyan-300 font-mono-num border border-slate-700">0</span>
         </div>
-      </div>
-
-      <!-- 大型タイル一覧ヘッダー -->
-      <div class="flex items-center justify-between px-1">
-        <p class="text-xs font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-          <span>🎯</span>
-          <span>リハーサルマーク (タップで即再生)</span>
-        </p>
-        <span class="text-[10px] text-slate-400">片手押し可能・誤操作ロック中</span>
-      </div>
-
-      <!-- 大型リハーサルマークタイルグリッド (Launchpad風) -->
-      <div id="playTilesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 pb-4">
-        <!-- 空状態案内 -->
-        <div id="emptyPlayMsg" class="col-span-full py-12 px-4 rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
-          <div class="w-12 h-12 rounded-2xl bg-amber-950/40 text-amber-400 border border-amber-700/40 flex items-center justify-center text-xl">
-            🎺
-          </div>
-          <p class="font-bold text-slate-200 text-sm">マーカーがまだ登録されていません</p>
-          <p class="text-xs text-slate-400 max-w-xs">右上の「🛠️ 編集」タブに切り替えて、曲を再生しながらマークを打刻してください。</p>
-          <button id="goToEditBtn" class="mt-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
-            編集画面へ移動
+        <div class="flex items-center gap-2">
+          <button id="sortMarkersBtn" class="touch-press text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition">
+            整列
+          </button>
+          <button id="clearAllMarkersBtn" class="touch-press text-xs px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40 font-medium transition">
+            全消去
           </button>
         </div>
       </div>
 
-    </div>
-
-    <!-- ==============================================
-         【MODE 2: 編集モード (Edit Mode)】
-         従来の打刻・±0.1s微調整・JSON管理
-         ============================================== -->
-    <div id="viewEditMode" class="hidden flex flex-col gap-3">
-      
-      <!-- サブタブ (マーカー一覧 / 楽曲設定&JSON) -->
-      <div class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 max-w-sm mx-auto w-full">
-        <button id="tabMarkersBtn" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition text-white bg-slate-800 shadow-sm flex items-center justify-center gap-1.5">
-          <span>マーク微調整</span>
-          <span id="tabMarkerCount" class="px-1.5 py-0.2 rounded-full bg-slate-950 text-cyan-300 font-mono-num text-[10px]">0</span>
-        </button>
-
-        <button id="tabSettingsJsonBtn" class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5">
-          <span>JSON・設定</span>
-        </button>
-      </div>
-
-      <!-- マーカーリスト (編集・微調整) -->
-      <div id="sectionMarkers" class="flex flex-col gap-2.5">
-        <div class="flex items-center justify-between px-1">
-          <span class="text-xs font-bold text-slate-300">登録済みマーク</span>
-          <div class="flex items-center gap-2">
-            <button id="sortMarkersBtn" class="touch-press text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium transition flex items-center gap-1">
-              <span>時間順ソート</span>
-            </button>
-            <button id="clearAllMarkersBtn" class="touch-press text-xs px-2.5 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 font-medium transition">
-              全消去
-            </button>
-          </div>
-        </div>
-
-        <div id="markersList" class="flex flex-col gap-2 min-h-[140px]">
-          <div id="emptyMarkersMsg" class="py-10 px-4 rounded-xl border border-dashed border-slate-800 bg-slate-900/40 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
-            <p class="font-medium text-slate-300">マーカーがありません</p>
-            <p class="text-[11px] text-slate-500">下の「マーカー打刻」を押して追加してください。</p>
-          </div>
+      <!-- リスト -->
+      <div id="markersList" class="flex flex-col gap-2 min-h-[160px]">
+        <div id="emptyMarkersMsg" class="py-12 px-4 rounded-lg border border-dashed border-slate-800/80 bg-slate-950/40 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-1.5">
+          <p>マーカーはまだありません</p>
+          <p class="text-[11px] text-slate-600">再生しながら [マーカー追加] ボタン、またはキーボードの [M] キーで打刻できます。</p>
         </div>
       </div>
-
-      <!-- JSON設定画面 -->
-      <div id="sectionSettingsJson" class="hidden flex flex-col gap-3">
-        <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-sm flex flex-col gap-2.5">
-          <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider border-b border-slate-800 pb-1.5">楽曲メタデータ</h2>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">楽曲タイトル (pieceTitle)</label>
-            <input type="text" id="pieceTitleInput" placeholder="例: プスタ" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:outline-none text-xs text-slate-100 placeholder-slate-600 transition">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">音源ID (audioFile)</label>
-            <input type="text" id="audioFileNameInput" placeholder="puszta" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:outline-none text-xs text-slate-100 placeholder-slate-600 transition font-mono-num">
-          </div>
-        </div>
-
-        <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-sm flex flex-col gap-2.5">
-          <div class="flex items-center justify-between">
-            <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider">JSON エクスポート</h2>
-            <span class="text-[10px] text-emerald-400 font-mono-num">● リアルタイム</span>
-          </div>
-          <div class="relative h-36 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-            <pre id="jsonPreview" class="w-full h-full p-2.5 text-[10px] font-mono-num text-cyan-300 overflow-auto select-all leading-relaxed whitespace-pre"></pre>
-          </div>
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <button id="copyJsonBtn" class="touch-press py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-100 font-bold text-xs transition border border-slate-700 flex items-center justify-center gap-1.5">
-              <span id="copyBtnText">JSONコピー</span>
-            </button>
-            <button id="downloadJsonBtn" class="touch-press py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
-              <span>JSON保存</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
   </main>
 
-  <!-- 画面下部 固定コントローラー (モードに応じて変化) -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 px-3 py-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+  <!-- 画面下部 固定コントローラー -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-4 py-2.5 pb-safe shadow-lg">
     <div class="max-w-md mx-auto flex items-center gap-2">
-      
-      <!-- 演奏練習モード専用ボトムバー -->
-      <div id="playModeBottomBar" class="flex items-center gap-2 w-full">
-        <!-- 前のマークへ -->
-        <button id="btnPrevMarker" class="touch-press w-12 h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 flex flex-col items-center justify-center shrink-0" title="前のマークへ">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span class="text-[9px] font-bold text-slate-400 mt-0.5">前マーク</span>
-        </button>
+      <!-- 5秒戻る -->
+      <button id="btnRewind5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒戻る (←)">
+        <span class="text-xs font-mono-num font-bold">-5s</span>
+      </button>
 
-        <!-- 再生 / 一時停止 -->
-        <button id="btnPlayPausePlayMode" class="touch-press w-14 h-14 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-amber-500/25">
-          <svg id="playIcon1" class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          <svg id="pauseIcon1" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-          </svg>
-          <span id="playPauseText1" class="text-[9px] font-bold">再生</span>
-        </button>
+      <!-- 再生 / 一時停止 -->
+      <button id="btnPlayPause" class="touch-press w-14 h-12 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md font-bold">
+        <svg id="playIcon" class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        <svg id="pauseIcon" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+        </svg>
+      </button>
 
-        <!-- 次のマークへ -->
-        <button id="btnNextMarker" class="touch-press w-12 h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 flex flex-col items-center justify-center shrink-0" title="次のマークへ">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-          </svg>
-          <span class="text-[9px] font-bold text-slate-400 mt-0.5">次マーク</span>
-        </button>
+      <!-- 5秒進む -->
+      <button id="btnForward5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒進む (→)">
+        <span class="text-xs font-mono-num font-bold">+5s</span>
+      </button>
 
-        <!-- 頭出しリプレイボタン (現在マークの頭からやり直し) -->
-        <button id="btnReplayCurrentMarker" class="touch-press flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 px-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span class="text-sm font-black tracking-wide">マーク頭出し</span>
-        </button>
-      </div>
-
-      <!-- 編集モード専用ボトムバー -->
-      <div id="editModeBottomBar" class="hidden flex items-center gap-2 w-full">
-        <button id="btnRewind5s" class="touch-press w-12 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex flex-col items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
-          </svg>
-          <span class="text-[9px] font-bold text-slate-400 mt-0.5">-5s</span>
-        </button>
-
-        <button id="btnPlayPauseEditMode" class="touch-press w-14 h-14 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex flex-col items-center justify-center shrink-0 shadow-lg shadow-cyan-500/25">
-          <svg id="playIcon2" class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          <svg id="pauseIcon2" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-          </svg>
-          <span id="playPauseText2" class="text-[9px] font-bold">再生</span>
-        </button>
-
-        <button id="btnForward5s" class="touch-press w-12 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 flex flex-col items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
-          </svg>
-          <span class="text-[9px] font-bold text-slate-400 mt-0.5">+5s</span>
-        </button>
-
-        <!-- マーカー打刻特大ボタン -->
-        <button id="btnAddMarkerBtn" class="touch-press flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 px-2">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-          <span class="text-sm font-black tracking-wide">マーカー打刻 (M)</span>
-        </button>
-      </div>
-
+      <!-- マーカー打刻 -->
+      <button id="btnAddMarkerBtn" class="touch-press flex-1 h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center justify-center gap-2 px-3 shadow-md">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+        <span class="text-xs font-bold tracking-wide">マーカー追加 (M)</span>
+      </button>
     </div>
   </nav>
 
-  <!-- ガイドモーダル -->
-  <div id="shortcutsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
-          <span>💡</span> モード別 使い方ガイド
-        </h3>
-        <button id="closeShortcutsModal" class="p-2 text-slate-400 hover:text-slate-200 text-xl leading-none">&times;</button>
-      </div>
-      
-      <div class="space-y-3 text-xs text-slate-300 max-h-[60vh] overflow-y-auto pr-1">
-        <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-800/40">
-          <p class="font-bold text-amber-300 mb-1 text-sm flex items-center gap-1">🎺 演奏練習モード</p>
-          <p class="text-[11px] text-slate-300 leading-relaxed">
-            ・大きなタイル（A, B, C...）をタップすると、その位置へ<strong>即座に頭出し再生</strong>されます。<br>
-            ・現在鳴っている区間のタイルが<strong>光って表示</strong>されます。<br>
-            ・<strong>助走 -2s</strong>をオンにすると、マークの2秒手前から再生され、楽器を構える余裕が生まれます。
-          </p>
-        </div>
-
-        <div class="p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/40">
-          <p class="font-bold text-cyan-300 mb-1 text-sm flex items-center gap-1">🛠️ 編集モード</p>
-          <p class="text-[11px] text-slate-300 leading-relaxed">
-            ・曲を聴きながら下の「打刻」ボタンを押してマークを追加。<br>
-            ・「-0.1s / +0.1s」で0.1秒単位のズレを聴き比べながら精密微調整できます。
-          </p>
-        </div>
-      </div>
-
-      <div class="mt-4 text-center">
-        <button id="confirmCloseShortcuts" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">閉じる</button>
-      </div>
-    </div>
-  </div>
-
   <!-- トースト通知 -->
-  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-4 py-2 rounded-xl shadow-2xl backdrop-blur opacity-0 pointer-events-none transition duration-200 z-50 text-xs font-semibold flex items-center gap-2">
-    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-    </svg>
-    <span id="toastMsg">通知メッセージ</span>
+  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-3.5 py-1.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition duration-150 z-50 text-xs font-medium">
+    <span id="toastMsg">通知</span>
   </div>
 
   <audio id="audioElement" preload="metadata"></audio>
 
   <script>
-    // アプリケーション状態
     const state = {
-      mode: 'play', // 'play' (演奏モード) | 'edit' (編集モード)
       audioBuffer: null,
       audioDuration: 0,
-      isPlaying: false,
-      audioFileName: '',
-      markers: [], // [{ id, label, timeMs }]
-      nextLabelIndex: 0,
-      currentMarkerIndex: -1,
-      prerollEnabled: false // 2秒助走オプション
+      audioFileName: 'audio',
+      markers: [],
+      nextLabelIndex: 0
     };
 
     let audioCtx = null;
     let isScrubbing = false;
 
-    // DOM参照
     const audioElement = document.getElementById('audioElement');
     const audioFileInput = document.getElementById('audioFileInput');
     const dropZone = document.getElementById('dropZone');
@@ -451,137 +210,29 @@
     const currentTimeDisplay = document.getElementById('currentTimeDisplay');
     const totalDurationDisplay = document.getElementById('totalDurationDisplay');
     const activeMarkerLabel = document.getElementById('activeMarkerLabel');
-    const playbackRateSelect = document.getElementById('playbackRateSelect');
+    const markerCountBadge = document.getElementById('markerCountBadge');
 
     const waveformCanvas = document.getElementById('waveformCanvas');
     const waveformContainer = document.getElementById('waveformContainer');
     const playhead = document.getElementById('playhead');
-    const hoverHead = document.getElementById('hoverHead');
     const markerPinsOverlay = document.getElementById('markerPinsOverlay');
 
-    // モード切り替え要素
-    const btnSwitchPlayMode = document.getElementById('btnSwitchPlayMode');
-    const btnSwitchEditMode = document.getElementById('btnSwitchEditMode');
-    const currentModeBadge = document.getElementById('currentModeBadge');
-    const viewPlayMode = document.getElementById('viewPlayMode');
-    const viewEditMode = document.getElementById('viewEditMode');
-    const playModeBottomBar = document.getElementById('playModeBottomBar');
-    const editModeBottomBar = document.getElementById('editModeBottomBar');
-    const playTilesGrid = document.getElementById('playTilesGrid');
-    const emptyPlayMsg = document.getElementById('emptyPlayMsg');
-    const goToEditBtn = document.getElementById('goToEditBtn');
-    const togglePrerollBtn = document.getElementById('togglePrerollBtn');
-    const prerollIndicator = document.getElementById('prerollIndicator');
-
-    // 演奏モード操作ボタン
-    const btnPlayPausePlayMode = document.getElementById('btnPlayPausePlayMode');
-    const playIcon1 = document.getElementById('playIcon1');
-    const pauseIcon1 = document.getElementById('pauseIcon1');
-    const playPauseText1 = document.getElementById('playPauseText1');
-    const btnPrevMarker = document.getElementById('btnPrevMarker');
-    const btnNextMarker = document.getElementById('btnNextMarker');
-    const btnReplayCurrentMarker = document.getElementById('btnReplayCurrentMarker');
-
-    // 編集モード操作ボタン
-    const btnPlayPauseEditMode = document.getElementById('btnPlayPauseEditMode');
-    const playIcon2 = document.getElementById('playIcon2');
-    const pauseIcon2 = document.getElementById('pauseIcon2');
-    const playPauseText2 = document.getElementById('playPauseText2');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
     const btnRewind5s = document.getElementById('btnRewind5s');
     const btnForward5s = document.getElementById('btnForward5s');
     const btnAddMarkerBtn = document.getElementById('btnAddMarkerBtn');
 
-    // 編集モード内サブタブ
-    const tabMarkersBtn = document.getElementById('tabMarkersBtn');
-    const tabSettingsJsonBtn = document.getElementById('tabSettingsJsonBtn');
-    const sectionMarkers = document.getElementById('sectionMarkers');
-    const sectionSettingsJson = document.getElementById('sectionSettingsJson');
-    const tabMarkerCount = document.getElementById('tabMarkerCount');
     const markersList = document.getElementById('markersList');
     const emptyMarkersMsg = document.getElementById('emptyMarkersMsg');
     const sortMarkersBtn = document.getElementById('sortMarkersBtn');
     const clearAllMarkersBtn = document.getElementById('clearAllMarkersBtn');
 
-    // JSON関連
-    const pieceTitleInput = document.getElementById('pieceTitleInput');
-    const audioFileNameInput = document.getElementById('audioFileNameInput');
-    const jsonPreview = document.getElementById('jsonPreview');
-    const copyJsonBtn = document.getElementById('copyJsonBtn');
-    const copyBtnText = document.getElementById('copyBtnText');
     const downloadJsonBtn = document.getElementById('downloadJsonBtn');
     const jsonFileInput = document.getElementById('jsonFileInput');
-
-    // モーダル・トースト
-    const showShortcutsBtn = document.getElementById('showShortcutsBtn');
-    const shortcutsModal = document.getElementById('shortcutsModal');
-    const closeShortcutsModal = document.getElementById('closeShortcutsModal');
-    const confirmCloseShortcuts = document.getElementById('confirmCloseShortcuts');
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toastMsg');
-
-    function setAppMode(targetMode) {
-      state.mode = targetMode;
-      if (targetMode === 'play') {
-        // 演奏モードON
-        viewPlayMode.classList.remove('hidden');
-        viewEditMode.classList.add('hidden');
-        playModeBottomBar.classList.remove('hidden');
-        editModeBottomBar.classList.add('hidden');
-
-        btnSwitchPlayMode.className = 'touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md';
-        btnSwitchEditMode.className = 'touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
-        currentModeBadge.innerHTML = '🎺 演奏練習';
-        currentModeBadge.className = 'text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
-
-        renderPlayTiles();
-      } else {
-        // 編集モードON
-        viewPlayMode.classList.add('hidden');
-        viewEditMode.classList.remove('hidden');
-        playModeBottomBar.classList.add('hidden');
-        editModeBottomBar.classList.remove('hidden');
-
-        btnSwitchEditMode.className = 'touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 shadow-md';
-        btnSwitchPlayMode.className = 'touch-press px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
-        currentModeBadge.innerHTML = '🛠️ 編集モード';
-        currentModeBadge.className = 'text-[9px] px-1.5 py-0.5 rounded font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
-
-        renderMarkersList();
-      }
-    }
-
-    btnSwitchPlayMode.addEventListener('click', () => setAppMode('play'));
-    btnSwitchEditMode.addEventListener('click', () => setAppMode('edit'));
-    goToEditBtn.addEventListener('click', () => setAppMode('edit'));
-
-    // 2秒前プレロール切り替え
-    togglePrerollBtn.addEventListener('click', () => {
-      state.prerollEnabled = !state.prerollEnabled;
-      if (state.prerollEnabled) {
-        togglePrerollBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
-        togglePrerollBtn.classList.add('bg-amber-500/20', 'text-amber-300', 'border-amber-500/50');
-        prerollIndicator.classList.remove('bg-slate-500');
-        prerollIndicator.classList.add('bg-amber-400');
-        showToast('助走 -2s ON: マークの2秒前から再生します');
-      } else {
-        togglePrerollBtn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
-        togglePrerollBtn.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/50');
-        prerollIndicator.classList.add('bg-slate-500');
-        prerollIndicator.classList.remove('bg-amber-400');
-        showToast('助走 -2s OFF: マーク位置から直接再生します');
-      }
-    });
-
-    // ユーティリティ
-    function getNextDefaultLabel(index) {
-      if (index === 0) return 'Intro';
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      const letterIndex = index - 1;
-      if (letterIndex < letters.length) {
-        return letters[letterIndex];
-      }
-      return letters[letterIndex % 26] + Math.floor(letterIndex / 26);
-    }
 
     function formatTime(seconds) {
       if (isNaN(seconds) || seconds < 0) seconds = 0;
@@ -597,35 +248,32 @@
 
     function showToast(text) {
       toastMsg.textContent = text;
-      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.remove('opacity-0');
       toast.classList.add('opacity-100');
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
-        toast.classList.add('opacity-0', 'pointer-events-none');
         toast.classList.remove('opacity-100');
-      }, 2000);
+        toast.classList.add('opacity-0');
+      }, 1500);
+    }
+
+    function getNextDefaultLabel(index) {
+      if (index === 0) return 'Intro';
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const letterIdx = index - 1;
+      if (letterIdx < letters.length) return letters[letterIdx];
+      return letters[letterIdx % 26] + Math.floor(letterIdx / 26);
     }
 
     async function loadAudioFile(file) {
       if (!file) return;
-
-      state.audioFileName = file.name;
+      state.audioFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
       loadedFileName.textContent = file.name;
       
-      if (!pieceTitleInput.value) {
-        const titleWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-        pieceTitleInput.value = titleWithoutExt;
-      }
-      if (!audioFileNameInput.value) {
-        const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-        audioFileNameInput.value = nameWithoutExt.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      }
-
       uploadPrompt.classList.add('hidden');
       fileLoadedInfo.classList.remove('hidden');
 
-      const fileURL = URL.createObjectURL(file);
-      audioElement.src = fileURL;
+      audioElement.src = URL.createObjectURL(file);
 
       try {
         if (!audioCtx) {
@@ -636,22 +284,18 @@
           await audioCtx.resume();
         }
         const arrayBuffer = await file.arrayBuffer();
-        const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        state.audioBuffer = decodedBuffer;
-        state.audioDuration = decodedBuffer.duration;
+        state.audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        state.audioDuration = state.audioBuffer.duration;
         totalDurationDisplay.textContent = formatTime(state.audioDuration);
         drawWaveform();
         showToast('音源を読み込みました');
       } catch (err) {
-        console.warn('波形生成エラー:', err);
+        console.warn('波形描画エラー:', err);
       }
-      updateJSON();
-      renderPlayTiles();
     }
 
     audioFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) loadAudioFile(file);
+      if (e.target.files[0]) loadAudioFile(e.target.files[0]);
     });
 
     changeFileBtn.addEventListener('click', (e) => {
@@ -662,20 +306,18 @@
     ['dragenter', 'dragover'].forEach(ev => {
       dropZone.addEventListener(ev, (e) => {
         e.preventDefault();
-        dropZone.classList.add('border-cyan-400', 'bg-cyan-950/20');
+        dropZone.classList.add('border-cyan-400');
       });
     });
     ['dragleave', 'drop'].forEach(ev => {
       dropZone.addEventListener(ev, (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-cyan-400', 'bg-cyan-950/20');
+        dropZone.classList.remove('border-cyan-400');
       });
     });
     dropZone.addEventListener('drop', (e) => {
       const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('audio/')) {
-        loadAudioFile(file);
-      }
+      if (file && file.type.startsWith('audio/')) loadAudioFile(file);
     });
 
     function drawWaveform() {
@@ -697,22 +339,15 @@
       const amp = height / 2;
 
       ctx.clearRect(0, 0, width, height);
-
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, amp);
-      ctx.lineTo(width, amp);
-      ctx.stroke();
-
       ctx.fillStyle = '#0284c7';
+
       for (let i = 0; i < width; i++) {
         let min = 1.0;
         let max = -1.0;
         for (let j = 0; j < step; j++) {
-          const datum = data[(i * step) + j];
-          if (datum < min) min = datum;
-          if (datum > max) max = datum;
+          const val = data[(i * step) + j];
+          if (val < min) min = val;
+          if (val > max) max = val;
         }
         ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
       }
@@ -732,7 +367,7 @@
         if (pct < 0 || pct > 100) return;
 
         const pin = document.createElement('div');
-        pin.className = 'absolute top-0 bottom-0 flex flex-col items-center pointer-events-none group';
+        pin.className = 'absolute top-0 bottom-0 flex flex-col items-center pointer-events-none';
         pin.style.left = `${pct}%`;
         pin.innerHTML = `
           <div class="px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-bold text-[9px] transform -translate-x-1/2 shadow font-mono-num whitespace-nowrap">
@@ -745,43 +380,29 @@
     }
 
     function setPlaybackUI(isPlaying) {
-      state.isPlaying = isPlaying;
       if (isPlaying) {
-        // 演奏モード側
-        playIcon1.classList.add('hidden');
-        pauseIcon1.classList.remove('hidden');
-        playPauseText1.textContent = '停止';
-        // 編集モード側
-        playIcon2.classList.add('hidden');
-        pauseIcon2.classList.remove('hidden');
-        playPauseText2.textContent = '停止';
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
       } else {
-        playIcon1.classList.remove('hidden');
-        pauseIcon1.classList.add('hidden');
-        playPauseText1.textContent = '再生';
-        playIcon2.classList.remove('hidden');
-        pauseIcon2.classList.add('hidden');
-        playPauseText2.textContent = '再生';
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
       }
     }
 
     function togglePlayPause() {
       if (!audioElement.src) {
-        showToast('音源ファイルを選択してください');
+        showToast('音源を選択してください');
         return;
       }
       if (audioElement.paused) {
-        audioElement.play().then(() => {
-          setPlaybackUI(true);
-        }).catch(err => console.warn(err));
+        audioElement.play().then(() => setPlaybackUI(true)).catch(err => console.warn(err));
       } else {
         audioElement.pause();
         setPlaybackUI(false);
       }
     }
 
-    btnPlayPausePlayMode.addEventListener('click', togglePlayPause);
-    btnPlayPauseEditMode.addEventListener('click', togglePlayPause);
+    btnPlayPause.addEventListener('click', togglePlayPause);
 
     function seekRelative(seconds) {
       if (!audioElement.src) return;
@@ -793,14 +414,9 @@
     btnRewind5s.addEventListener('click', () => seekRelative(-5));
     btnForward5s.addEventListener('click', () => seekRelative(5));
 
-    playbackRateSelect.addEventListener('change', (e) => {
-      audioElement.playbackRate = parseFloat(e.target.value);
-    });
-
     audioElement.addEventListener('loadedmetadata', () => {
       state.audioDuration = audioElement.duration;
       totalDurationDisplay.textContent = formatTime(state.audioDuration);
-      updateJSON();
     });
 
     audioElement.addEventListener('timeupdate', () => {
@@ -820,8 +436,17 @@
         playhead.style.left = `${pct}%`;
       }
 
-      // 現在再生中のリハーサルマークを特定・ハイライト
-      updateCurrentActiveMarker();
+      // 現在のマーカー特定
+      const curMs = cur * 1000;
+      let curLabel = '--';
+      for (let i = 0; i < state.markers.length; i++) {
+        if (curMs >= state.markers[i].timeMs - 150) {
+          curLabel = state.markers[i].label;
+        } else {
+          break;
+        }
+      }
+      activeMarkerLabel.textContent = curLabel;
     }
 
     function handleWaveformSeek(clientX) {
@@ -844,145 +469,6 @@
       isScrubbing = false;
     });
 
-    function jumpToMarker(marker, index) {
-      if (!audioElement.src) {
-        showToast('音源ファイルを先に読み込んでください');
-        return;
-      }
-      state.currentMarkerIndex = index;
-
-      // 助走オプション (-2秒)
-      let targetSec = marker.timeMs / 1000;
-      if (state.prerollEnabled) {
-        targetSec = Math.max(0, targetSec - 2.0);
-      }
-
-      audioElement.currentTime = targetSec;
-      audioElement.play().then(() => {
-        setPlaybackUI(true);
-      });
-      updateProgress();
-      highlightActiveTile(index);
-      showToast(`「${marker.label}」へジャンプ (${formatTime(targetSec)})`);
-    }
-
-    function renderPlayTiles() {
-      if (state.markers.length === 0) {
-        emptyPlayMsg.classList.remove('hidden');
-        playTilesGrid.innerHTML = '';
-        playTilesGrid.appendChild(emptyPlayMsg);
-        activeMarkerLabel.textContent = '--';
-        return;
-      }
-
-      emptyPlayMsg.classList.add('hidden');
-      playTilesGrid.innerHTML = '';
-
-      state.markers.forEach((marker, index) => {
-        const tile = document.createElement('button');
-        tile.className = `play-tile touch-press relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl border transition shadow-lg text-center overflow-hidden min-h-[96px] sm:min-h-[110px] select-none ${
-          index === state.currentMarkerIndex
-            ? 'active-marker-tile border-emerald-400 bg-emerald-950/70 text-white'
-            : 'border-slate-800 bg-slate-900/90 hover:bg-slate-800/90 text-slate-100'
-        }`;
-        tile.setAttribute('data-index', index);
-
-        tile.innerHTML = `
-          <!-- 上部インデックス番号 -->
-          <span class="absolute top-2 left-2 text-[10px] font-mono-num font-bold text-slate-500">
-            #${index + 1}
-          </span>
-          <!-- 再生中アイコン -->
-          <div class="playing-indicator absolute top-2 right-2 ${index === state.currentMarkerIndex ? 'flex' : 'hidden'} items-center gap-0.5">
-            <span class="w-1.5 h-3 bg-emerald-400 animate-pulse rounded-full"></span>
-            <span class="w-1.5 h-4 bg-emerald-400 animate-pulse rounded-full delay-75"></span>
-            <span class="w-1.5 h-2 bg-emerald-400 animate-pulse rounded-full delay-150"></span>
-          </div>
-
-          <!-- 超大型マークラベル -->
-          <span class="text-2xl sm:text-3xl font-black font-mono-num tracking-tight leading-tight my-1 text-white">
-            ${escapeHtml(marker.label)}
-          </span>
-
-          <!-- タイムスタンプ -->
-          <span class="text-xs font-mono-num font-bold text-cyan-400/90 bg-slate-950/70 px-2 py-0.5 rounded-full border border-slate-800/80">
-            ${formatTimeMs(marker.timeMs)}
-          </span>
-        `;
-
-        tile.addEventListener('click', () => {
-          jumpToMarker(marker, index);
-        });
-
-        playTilesGrid.appendChild(tile);
-      });
-
-      updateCurrentActiveMarker();
-    }
-
-    function highlightActiveTile(activeIndex) {
-      const tiles = playTilesGrid.querySelectorAll('.play-tile');
-      tiles.forEach((t, i) => {
-        const ind = t.querySelector('.playing-indicator');
-        if (i === activeIndex) {
-          t.classList.add('active-marker-tile', 'border-emerald-400', 'bg-emerald-950/70');
-          t.classList.remove('border-slate-800', 'bg-slate-900/90');
-          if (ind) ind.classList.remove('hidden');
-        } else {
-          t.classList.remove('active-marker-tile', 'border-emerald-400', 'bg-emerald-950/70');
-          t.classList.add('border-slate-800', 'bg-slate-900/90');
-          if (ind) ind.classList.add('hidden');
-        }
-      });
-    }
-
-    function updateCurrentActiveMarker() {
-      if (state.markers.length === 0) {
-        activeMarkerLabel.textContent = '--';
-        return;
-      }
-      const curMs = audioElement.currentTime * 1000;
-      let activeIdx = -1;
-
-      for (let i = 0; i < state.markers.length; i++) {
-        if (curMs >= state.markers[i].timeMs - 150) {
-          activeIdx = i;
-        } else {
-          break;
-        }
-      }
-
-      if (activeIdx !== state.currentMarkerIndex) {
-        state.currentMarkerIndex = activeIdx;
-        if (activeIdx >= 0) {
-          activeMarkerLabel.textContent = state.markers[activeIdx].label;
-          highlightActiveTile(activeIdx);
-        } else {
-          activeMarkerLabel.textContent = 'Intro前';
-          highlightActiveTile(-1);
-        }
-      }
-    }
-
-    // 演奏モードボトムバー: 前へ・次へ・頭出しリプレイ
-    btnPrevMarker.addEventListener('click', () => {
-      if (state.markers.length === 0) return;
-      const curIdx = state.currentMarkerIndex <= 0 ? 0 : state.currentMarkerIndex - 1;
-      jumpToMarker(state.markers[curIdx], curIdx);
-    });
-
-    btnNextMarker.addEventListener('click', () => {
-      if (state.markers.length === 0) return;
-      const curIdx = state.currentMarkerIndex < state.markers.length - 1 ? state.currentMarkerIndex + 1 : state.markers.length - 1;
-      jumpToMarker(state.markers[curIdx], curIdx);
-    });
-
-    btnReplayCurrentMarker.addEventListener('click', () => {
-      if (state.markers.length === 0) return;
-      const targetIdx = Math.max(0, state.currentMarkerIndex);
-      jumpToMarker(state.markers[targetIdx], targetIdx);
-    });
-
     function addMarkerAtCurrentTime() {
       if (!audioElement.src) {
         showToast('音源を読み込んでから打刻してください');
@@ -993,7 +479,7 @@
       state.nextLabelIndex++;
 
       const newMarker = {
-        id: 'marker_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        id: 'm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
         label: defaultLabel,
         timeMs: curMs
       };
@@ -1001,16 +487,14 @@
       state.markers.push(newMarker);
       state.markers.sort((a, b) => a.timeMs - b.timeMs);
       renderMarkersList();
-      renderPlayTiles();
       renderMarkerPins();
-      updateJSON();
-      showToast(`マーク「${newMarker.label}」を追加 (${formatTimeMs(curMs)})`);
+      showToast(`マーク「${newMarker.label}」を追加`);
     }
 
     btnAddMarkerBtn.addEventListener('click', addMarkerAtCurrentTime);
 
     function renderMarkersList() {
-      tabMarkerCount.textContent = state.markers.length;
+      markerCountBadge.textContent = state.markers.length;
 
       if (state.markers.length === 0) {
         emptyMarkersMsg.classList.remove('hidden');
@@ -1023,63 +507,49 @@
       markersList.innerHTML = '';
 
       state.markers.forEach((marker, index) => {
-        const card = document.createElement('div');
-        card.className = 'rounded-xl border border-slate-800/90 bg-slate-900/90 p-2.5 flex flex-col gap-2 shadow-sm transition hover:border-slate-700';
+        const item = document.createElement('div');
+        item.className = 'rounded-lg border border-slate-800 bg-slate-950/60 p-2.5 flex items-center justify-between gap-3 text-xs';
         
-        card.innerHTML = `
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <span class="w-6 h-6 rounded-lg bg-emerald-950/80 border border-emerald-700/60 text-emerald-400 text-xs font-mono-num font-bold flex items-center justify-center shrink-0">
-                ${index + 1}
-              </span>
-              <input type="text" value="${escapeHtml(marker.label)}" 
-                data-id="${marker.id}" data-field="label" 
-                placeholder="ラベル名"
-                class="w-full bg-slate-950 border border-slate-800 focus:border-cyan-400 focus:outline-none rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-100 font-mono-num transition">
-            </div>
+        item.innerHTML = `
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <span class="text-slate-500 font-mono-num text-[11px] w-5 text-right font-semibold">${index + 1}</span>
+            <input type="text" value="${escapeHtml(marker.label)}" 
+              data-id="${marker.id}"
+              class="marker-label-input w-28 bg-slate-900 border border-slate-700/80 focus:border-cyan-400 focus:outline-none rounded px-2 py-1 text-slate-100 font-bold font-mono-num transition">
+            <span class="font-mono-num text-cyan-300 font-bold text-xs">${formatTimeMs(marker.timeMs)}</span>
+          </div>
 
-            <button data-id="${marker.id}" class="btn-delete p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-600/20 active:bg-rose-600 hover:text-white text-slate-400 transition shrink-0 min-w-[34px] min-h-[34px] flex items-center justify-center" title="削除">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button data-id="${marker.id}" data-step="-100" class="btn-nudge px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700">
+              -0.1s
+            </button>
+            <button data-id="${marker.id}" data-step="100" class="btn-nudge px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700">
+              +0.1s
+            </button>
+            <button data-id="${marker.id}" class="btn-play-from px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1">
+              再生
+            </button>
+            <button data-id="${marker.id}" class="btn-delete p-1 rounded bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 transition" title="削除">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
-
-          <div class="flex items-center justify-between gap-1 pt-1 border-t border-slate-800/60">
-            <span class="font-mono-num text-cyan-300 font-bold text-xs">${formatTimeMs(marker.timeMs)}</span>
-
-            <div class="flex items-center gap-1.5">
-              <button data-id="${marker.id}" data-step="-100" class="btn-nudge touch-press px-2 py-1 rounded-lg bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 hover:text-white text-slate-200 text-xs font-mono-num font-semibold transition border border-slate-700/60">
-                -0.1s
-              </button>
-              <button data-id="${marker.id}" data-step="100" class="btn-nudge touch-press px-2 py-1 rounded-lg bg-slate-800 hover:bg-cyan-600 active:bg-cyan-500 hover:text-white text-slate-200 text-xs font-mono-num font-semibold transition border border-slate-700/60">
-                +0.1s
-              </button>
-              <button data-id="${marker.id}" class="btn-play-from touch-press px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition flex items-center gap-1">
-                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                <span>再生</span>
-              </button>
-            </div>
-          </div>
         `;
-        markersList.appendChild(card);
+        markersList.appendChild(item);
       });
 
       attachMarkerEvents();
     }
 
     function attachMarkerEvents() {
-      markersList.querySelectorAll('input[data-field="label"]').forEach(input => {
+      markersList.querySelectorAll('.marker-label-input').forEach(input => {
         input.addEventListener('change', (e) => {
           const id = e.target.getAttribute('data-id');
-          const marker = state.markers.find(m => m.id === id);
-          if (marker) {
-            marker.label = e.target.value.trim() || 'Marker';
+          const m = state.markers.find(x => x.id === id);
+          if (m) {
+            m.label = e.target.value.trim() || 'Marker';
             renderMarkerPins();
-            renderPlayTiles();
-            updateJSON();
           }
         });
       });
@@ -1088,17 +558,14 @@
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
           const step = parseInt(btn.getAttribute('data-step'), 10);
-          const marker = state.markers.find(m => m.id === id);
-          if (marker) {
-            marker.timeMs = Math.max(0, marker.timeMs + step);
+          const m = state.markers.find(x => x.id === id);
+          if (m) {
+            m.timeMs = Math.max(0, m.timeMs + step);
             state.markers.sort((a, b) => a.timeMs - b.timeMs);
             renderMarkersList();
-            renderPlayTiles();
             renderMarkerPins();
-            updateJSON();
-
             if (audioElement.src) {
-              audioElement.currentTime = marker.timeMs / 1000;
+              audioElement.currentTime = m.timeMs / 1000;
               audioElement.play().then(() => setPlaybackUI(true));
               updateProgress();
             }
@@ -1109,9 +576,9 @@
       markersList.querySelectorAll('.btn-play-from').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
-          const marker = state.markers.find(m => m.id === id);
-          if (marker && audioElement.src) {
-            audioElement.currentTime = marker.timeMs / 1000;
+          const m = state.markers.find(x => x.id === id);
+          if (m && audioElement.src) {
+            audioElement.currentTime = m.timeMs / 1000;
             audioElement.play().then(() => setPlaybackUI(true));
             updateProgress();
           }
@@ -1121,12 +588,9 @@
       markersList.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
-          state.markers = state.markers.filter(m => m.id !== id);
+          state.markers = state.markers.filter(x => x.id !== id);
           renderMarkersList();
-          renderPlayTiles();
           renderMarkerPins();
-          updateJSON();
-          showToast('マーカーを削除しました');
         });
       });
     }
@@ -1134,9 +598,7 @@
     sortMarkersBtn.addEventListener('click', () => {
       state.markers.sort((a, b) => a.timeMs - b.timeMs);
       renderMarkersList();
-      renderPlayTiles();
       renderMarkerPins();
-      updateJSON();
       showToast('時間順に並べ替えました');
     });
 
@@ -1145,81 +607,27 @@
       state.markers = [];
       state.nextLabelIndex = 0;
       renderMarkersList();
-      renderPlayTiles();
       renderMarkerPins();
-      updateJSON();
       showToast('マーカーを全消去しました');
     });
 
-    function switchEditSubTab(target) {
-      if (target === 'markers') {
-        sectionMarkers.classList.remove('hidden');
-        sectionSettingsJson.classList.add('hidden');
-        tabMarkersBtn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-white bg-slate-800 shadow-sm flex items-center justify-center gap-1.5';
-        tabSettingsJsonBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5';
-      } else {
-        sectionMarkers.classList.add('hidden');
-        sectionSettingsJson.classList.remove('hidden');
-        tabSettingsJsonBtn.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg transition text-white bg-slate-800 shadow-sm flex items-center justify-center gap-1.5';
-        tabMarkersBtn.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5';
-      }
-    }
-
-    tabMarkersBtn.addEventListener('click', () => switchEditSubTab('markers'));
-    tabSettingsJsonBtn.addEventListener('click', () => switchEditSubTab('settings'));
-
-    function generateJSONString() {
-      const output = {
-        pieceTitle: pieceTitleInput.value.trim() || "Untitled Piece",
-        audioFile: audioFileNameInput.value.trim() || "audio",
-        markers: state.markers.map(m => ({
-          label: m.label,
-          timeMs: m.timeMs
-        }))
-      };
-      return JSON.stringify(output, null, 2);
-    }
-
-    function updateJSON() {
-      jsonPreview.textContent = generateJSONString();
-    }
-
-    [pieceTitleInput, audioFileNameInput].forEach(el => {
-      el.addEventListener('input', updateJSON);
-    });
-
-    copyJsonBtn.addEventListener('click', () => {
-      const text = generateJSONString();
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        copyBtnText.textContent = 'コピー完了!';
-        showToast('JSONをクリップボードにコピーしました');
-        setTimeout(() => {
-          copyBtnText.textContent = 'JSONコピー';
-        }, 1800);
-      } catch (err) {
-        showToast('コピーに失敗しました');
-      }
-      document.body.removeChild(textArea);
-    });
-
+    // JSON入出力
     downloadJsonBtn.addEventListener('click', () => {
-      const jsonStr = generateJSONString();
-      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const data = {
+        pieceTitle: state.audioFileName || "markers",
+        audioFile: state.audioFileName || "audio",
+        markers: state.markers.map(m => ({ label: m.label, timeMs: m.timeMs }))
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      const safeTitle = (pieceTitleInput.value.trim() || "markers").replace(/[\\/:*?"<>| ]+/g, '_');
       a.href = url;
-      a.download = `${safeTitle}_markers.json`;
+      a.download = `${state.audioFileName}_markers.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('JSONファイルを保存しました');
+      showToast('JSONを保存しました');
     });
 
     jsonFileInput.addEventListener('change', (e) => {
@@ -1229,36 +637,30 @@
       reader.onload = (event) => {
         try {
           const data = JSON.parse(event.target.result);
-          if (data.pieceTitle) pieceTitleInput.value = data.pieceTitle;
-          if (data.audioFile) audioFileNameInput.value = data.audioFile;
-
           if (Array.isArray(data.markers)) {
             state.markers = data.markers.map((m, idx) => ({
-              id: 'imported_' + idx + '_' + Date.now(),
+              id: 'm_' + idx + '_' + Date.now(),
               label: m.label || `Marker ${idx + 1}`,
               timeMs: typeof m.timeMs === 'number' ? m.timeMs : 0
             }));
             state.markers.sort((a, b) => a.timeMs - b.timeMs);
             state.nextLabelIndex = state.markers.length;
           }
-
           renderMarkersList();
-          renderPlayTiles();
           renderMarkerPins();
-          updateJSON();
-          showToast('JSONデータを読み込みました');
+          showToast('JSONをインポートしました');
         } catch (err) {
-          showToast('JSONの解析に失敗しました');
+          showToast('JSONの読み込みに失敗しました');
         }
       };
       reader.readAsText(file);
       e.target.value = '';
     });
 
+    // キーボードショートカット (Space: 再生/停止, M: 打刻, ←/→: 5秒シーク)
     window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
-        return;
-      }
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         togglePlayPause();
@@ -1274,21 +676,6 @@
       }
     });
 
-    showShortcutsBtn.addEventListener('click', () => {
-      shortcutsModal.classList.remove('hidden');
-    });
-    closeShortcutsModal.addEventListener('click', () => {
-      shortcutsModal.classList.add('hidden');
-    });
-    confirmCloseShortcuts.addEventListener('click', () => {
-      shortcutsModal.classList.add('hidden');
-    });
-    shortcutsModal.addEventListener('click', (e) => {
-      if (e.target === shortcutsModal) {
-        shortcutsModal.classList.add('hidden');
-      }
-    });
-
     function escapeHtml(str) {
       if (!str) return '';
       return String(str)
@@ -1297,10 +684,6 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
     }
-
-    // 初期起動
-    setAppMode('play');
-    updateJSON();
   </script>
 </body>
 </html>
