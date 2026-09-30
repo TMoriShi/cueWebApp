@@ -53,33 +53,37 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-24 md:pb-6">
 
   <!-- ヘッダー -->
-  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 px-4 sm:px-6 py-2.5 pt-safe flex items-center justify-between shadow-sm">
+  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 px-3 sm:px-6 py-2.5 pt-safe flex items-center justify-between shadow-sm">
     <div class="flex items-center space-x-2">
       <span class="text-base font-bold text-white tracking-tight">cueWebApp</span>
     </div>
 
-    <!-- モード切り替え & JSON -->
-    <div class="flex items-center gap-2">
-      <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-        <button id="btnModePlay" class="touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm">演奏</button>
-        <button id="btnModeEdit" class="touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200">編集</button>
+    <!-- モード切り替えタブ & JSONボタン -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- 3モードトグル -->
+      <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs">
+        <button id="btnModePlay" class="touch-press px-2.5 sm:px-3 py-1 rounded-md font-bold transition bg-cyan-600 text-white shadow-sm">演奏</button>
+        <button id="btnModeEdit" class="touch-press px-2.5 sm:px-3 py-1 rounded-md font-semibold transition text-slate-400 hover:text-slate-200">編集</button>
+        <button id="btnModeFiles" class="touch-press px-2.5 sm:px-3 py-1 rounded-md font-semibold transition text-slate-400 hover:text-slate-200">ファイル</button>
       </div>
 
-      <div class="h-4 w-px bg-slate-800 mx-0.5"></div>
+      <div class="h-4 w-px bg-slate-800 mx-0.5 hidden sm:block"></div>
 
-      <label class="cursor-pointer text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="JSONインポート">
+      <!-- JSONインポート -->
+      <label class="cursor-pointer text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONインポート">
         <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
-        <span class="hidden sm:inline">読込</span>
+        <span class="font-medium">JSONインポート</span>
         <input type="file" id="jsonFileInput" accept=".json" class="hidden">
       </label>
 
-      <button id="downloadJsonBtn" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="JSONエクスポート">
+      <!-- JSONエクスポート -->
+      <button id="downloadJsonBtn" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shrink-0" title="JSONエクスポート">
         <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
-        <span class="hidden sm:inline">保存</span>
+        <span class="font-medium">JSONエクスポート</span>
       </button>
     </div>
   </header>
@@ -129,16 +133,16 @@
       </div>
     </div>
 
-    <!-- MODE 1: 演奏モード表示 (クリーンなタイル) -->
+    <!-- TAB 1: 演奏モード表示 (クリーンなタイル) -->
     <div id="playView" class="flex flex-col gap-2">
       <div id="playTilesGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
         <div id="emptyPlayMsg" class="col-span-full py-12 text-center text-slate-500 text-xs">
-          マーカーがありません。右上の「編集」で追加してください。
+          マーカーがありません。「編集」タブで追加してください。
         </div>
       </div>
     </div>
 
-    <!-- MODE 2: 編集モード表示 (マーカーリスト) -->
+    <!-- TAB 2: 編集モード表示 (マーカーリスト) -->
     <div id="editView" class="hidden flex flex-col gap-2">
       <div class="flex items-center justify-between px-1">
         <span class="text-xs font-semibold text-slate-400">登録マーカー (<span id="markerCountBadge">0</span>)</span>
@@ -151,6 +155,32 @@
       <div id="markersList" class="flex flex-col gap-1.5">
         <div id="emptyMarkersMsg" class="py-12 text-center text-slate-500 text-xs">
           マーカーがありません。「追加」ボタンまたは [M] キーで打刻してください。
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: ファイル管理モード表示 (ローカルIndexedDB保存) -->
+    <div id="filesView" class="hidden flex flex-col gap-3">
+      <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-3 sm:p-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xs font-bold text-slate-200">ブラウザ内ストレージへ保存</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">現在の音源ファイルとマーカーをブラウザ内に保存し、次回すぐに再開できます。</p>
+        </div>
+        <button id="btnSaveToLocal" class="touch-press px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+          </svg>
+          <span>現在のセットを保存</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between px-1">
+        <span class="text-xs font-semibold text-slate-400">保存済みリスト (<span id="savedCountBadge">0</span>)</span>
+      </div>
+
+      <div id="savedProjectsList" class="flex flex-col gap-2">
+        <div id="emptyFilesMsg" class="py-12 text-center text-slate-500 text-xs rounded-xl border border-dashed border-slate-800/80">
+          保存されたプロジェクトはありません。
         </div>
       </div>
     </div>
@@ -187,7 +217,7 @@
   </nav>
 
   <!-- トースト -->
-  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition duration-150 z-50 text-xs font-medium">
+  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-3.5 py-1.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition duration-150 z-50 text-xs font-medium">
     <span id="toastMsg">通知</span>
   </div>
 
@@ -195,10 +225,11 @@
 
   <script>
     const state = {
-      mode: 'play', // 'play' | 'edit'
+      mode: 'play', // 'play' | 'edit' | 'files'
       audioBuffer: null,
       audioDuration: 0,
       audioFileName: 'audio',
+      audioBlob: null,
       markers: [],
       nextLabelIndex: 0,
       currentMarkerIndex: -1
@@ -207,6 +238,7 @@
     let audioCtx = null;
     let isScrubbing = false;
 
+    // DOM要素
     const audioElement = document.getElementById('audioElement');
     const audioFileInput = document.getElementById('audioFileInput');
     const dropZone = document.getElementById('dropZone');
@@ -219,6 +251,7 @@
     const totalDurationDisplay = document.getElementById('totalDurationDisplay');
     const activeMarkerLabel = document.getElementById('activeMarkerLabel');
     const markerCountBadge = document.getElementById('markerCountBadge');
+    const savedCountBadge = document.getElementById('savedCountBadge');
 
     const waveformCanvas = document.getElementById('waveformCanvas');
     const waveformContainer = document.getElementById('waveformContainer');
@@ -234,8 +267,10 @@
 
     const btnModePlay = document.getElementById('btnModePlay');
     const btnModeEdit = document.getElementById('btnModeEdit');
+    const btnModeFiles = document.getElementById('btnModeFiles');
     const playView = document.getElementById('playView');
     const editView = document.getElementById('editView');
+    const filesView = document.getElementById('filesView');
     const playTilesGrid = document.getElementById('playTilesGrid');
     const emptyPlayMsg = document.getElementById('emptyPlayMsg');
 
@@ -244,31 +279,177 @@
     const sortMarkersBtn = document.getElementById('sortMarkersBtn');
     const clearAllMarkersBtn = document.getElementById('clearAllMarkersBtn');
 
+    const btnSaveToLocal = document.getElementById('btnSaveToLocal');
+    const savedProjectsList = document.getElementById('savedProjectsList');
+    const emptyFilesMsg = document.getElementById('emptyFilesMsg');
+
     const downloadJsonBtn = document.getElementById('downloadJsonBtn');
     const jsonFileInput = document.getElementById('jsonFileInput');
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toastMsg');
 
+    // ==========================================
+    // IndexedDB: 音声とマーカーのローカル保存管理
+    // ==========================================
+    const DB_NAME = 'CueWebAppDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'saved_songs';
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveProjectToDB() {
+      if (!state.audioBlob) {
+        showToast('音源が読み込まれていません');
+        return;
+      }
+      const db = await initDB();
+      const project = {
+        id: 'proj_' + state.audioFileName.replace(/\s+/g, '_'),
+        title: state.audioFileName,
+        audioBlob: state.audioBlob,
+        markers: state.markers,
+        updatedAt: Date.now()
+      };
+
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put(project);
+      tx.oncomplete = () => {
+        showToast(`「${state.audioFileName}」を保存しました`);
+        loadSavedProjectsList();
+      };
+      tx.onerror = () => showToast('保存に失敗しました');
+    }
+
+    async function loadSavedProjectsList() {
+      const db = await initDB();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).getAll();
+      req.onsuccess = () => {
+        const list = req.result || [];
+        savedCountBadge.textContent = list.length;
+        renderSavedProjectsList(list);
+      };
+    }
+
+    async function loadProjectFromDB(id) {
+      const db = await initDB();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(id);
+      req.onsuccess = async () => {
+        const p = req.result;
+        if (!p) return;
+        state.audioBlob = p.audioBlob;
+        state.markers = p.markers || [];
+        state.markers.sort((a, b) => a.timeMs - b.timeMs);
+        state.nextLabelIndex = state.markers.length;
+        
+        await loadAudioFile(new File([p.audioBlob], `${p.title}.mp3`, { type: p.audioBlob.type }));
+        setMode('play');
+        showToast(`「${p.title}」を呼び出しました`);
+      };
+    }
+
+    async function deleteProjectFromDB(id) {
+      const db = await initDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(id);
+      tx.oncomplete = () => {
+        showToast('削除しました');
+        loadSavedProjectsList();
+      };
+    }
+
+    function renderSavedProjectsList(projects) {
+      if (projects.length === 0) {
+        emptyFilesMsg.classList.remove('hidden');
+        savedProjectsList.innerHTML = '';
+        savedProjectsList.appendChild(emptyFilesMsg);
+        return;
+      }
+      emptyFilesMsg.classList.add('hidden');
+      savedProjectsList.innerHTML = '';
+
+      projects.sort((a, b) => b.updatedAt - a.updatedAt).forEach(proj => {
+        const item = document.createElement('div');
+        item.className = 'rounded-xl border border-slate-800 bg-slate-900/90 p-3 flex items-center justify-between gap-3';
+        
+        const dateStr = new Date(proj.updatedAt).toLocaleDateString('ja-JP', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        item.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <h3 class="text-xs font-bold text-white truncate font-mono-num">${escapeHtml(proj.title)}</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">マーカー ${proj.markers ? proj.markers.length : 0} 個 ・ ${dateStr}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button data-id="${proj.id}" class="btn-load-proj touch-press px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-sm">
+              開く
+            </button>
+            <button data-id="${proj.id}" class="btn-del-proj touch-press p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300" title="削除">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        `;
+        savedProjectsList.appendChild(item);
+      });
+
+      savedProjectsList.querySelectorAll('.btn-load-proj').forEach(b => {
+        b.addEventListener('click', () => loadProjectFromDB(b.getAttribute('data-id')));
+      });
+      savedProjectsList.querySelectorAll('.btn-del-proj').forEach(b => {
+        b.addEventListener('click', () => deleteProjectFromDB(b.getAttribute('data-id')));
+      });
+    }
+
+    btnSaveToLocal.addEventListener('click', saveProjectToDB);
+
+    // ==========================================
+    // モード切り替えロジック
+    // ==========================================
     function setMode(mode) {
       state.mode = mode;
+      [playView, editView, filesView].forEach(v => v.classList.add('hidden'));
+      [btnModePlay, btnModeEdit, btnModeFiles].forEach(b => {
+        b.className = 'touch-press px-2.5 sm:px-3 py-1 rounded-md font-semibold transition text-slate-400 hover:text-slate-200';
+      });
+
       if (mode === 'play') {
         playView.classList.remove('hidden');
-        editView.classList.add('hidden');
-        btnModePlay.className = 'touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm';
-        btnModeEdit.className = 'touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200';
+        btnModePlay.className = 'touch-press px-2.5 sm:px-3 py-1 rounded-md font-bold transition bg-cyan-600 text-white shadow-sm';
         renderPlayTiles();
-      } else {
-        playView.classList.add('hidden');
+      } else if (mode === 'edit') {
         editView.classList.remove('hidden');
-        btnModeEdit.className = 'touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm';
-        btnModePlay.className = 'touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200';
+        btnModeEdit.className = 'touch-press px-2.5 sm:px-3 py-1 rounded-md font-bold transition bg-cyan-600 text-white shadow-sm';
         renderMarkersList();
+      } else if (mode === 'files') {
+        filesView.classList.remove('hidden');
+        btnModeFiles.className = 'touch-press px-2.5 sm:px-3 py-1 rounded-md font-bold transition bg-cyan-600 text-white shadow-sm';
+        loadSavedProjectsList();
       }
     }
 
     btnModePlay.addEventListener('click', () => setMode('play'));
     btnModeEdit.addEventListener('click', () => setMode('edit'));
+    btnModeFiles.addEventListener('click', () => setMode('files'));
 
+    // ==========================================
+    // オーディオ & 波形処理
+    // ==========================================
     function formatTime(seconds) {
       if (isNaN(seconds) || seconds < 0) seconds = 0;
       const m = Math.floor(seconds / 60);
@@ -300,13 +481,13 @@
       return letters[letterIdx % 26] + Math.floor(letterIdx / 26);
     }
 
-    // 正確な総再生時間を取得
     function getAccurateDuration() {
       return state.audioDuration || audioElement.duration || 0;
     }
 
     async function loadAudioFile(file) {
       if (!file) return;
+      state.audioBlob = file;
       state.audioFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
       loadedFileName.textContent = file.name;
       
@@ -403,7 +584,6 @@
       }
     });
 
-    // 波形とマーカーピンの厳密な位置同期
     function renderMarkerPins() {
       markerPinsOverlay.innerHTML = '';
       const totalSec = getAccurateDuration();
@@ -487,7 +667,6 @@
         playhead.style.left = `${pct}%`;
       }
 
-      // 現在再生中のマーカー特定
       const curMs = cur * 1000;
       let activeIdx = -1;
       for (let i = 0; i < state.markers.length; i++) {
@@ -533,7 +712,6 @@
       updateProgress();
     }
 
-    // 演奏モード: タイル描画
     function renderPlayTiles() {
       if (state.markers.length === 0) {
         emptyPlayMsg.classList.remove('hidden');
@@ -594,7 +772,6 @@
 
     btnAddMarkerBtn.addEventListener('click', addMarkerAtCurrentTime);
 
-    // 編集モード: すっきりとした1行リスト
     function renderMarkersList() {
       markerCountBadge.textContent = state.markers.length;
 
@@ -708,6 +885,9 @@
       showToast('全消去しました');
     });
 
+    // ==========================================
+    // JSONインポート & エクスポート
+    // ==========================================
     downloadJsonBtn.addEventListener('click', () => {
       const data = {
         pieceTitle: state.audioFileName || "markers",
@@ -723,7 +903,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('保存しました');
+      showToast('JSONをエクスポートしました');
     });
 
     jsonFileInput.addEventListener('change', (e) => {
@@ -745,7 +925,7 @@
           renderMarkersList();
           renderMarkerPins();
           renderPlayTiles();
-          showToast('インポート完了');
+          showToast('JSONをインポートしました');
         } catch (err) {
           showToast('JSON読み込み失敗');
         }
@@ -754,6 +934,7 @@
       e.target.value = '';
     });
 
+    // ショートカット
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
