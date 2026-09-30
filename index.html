@@ -122,11 +122,11 @@
         <div class="flex items-center gap-1 text-xs">
           <span class="text-slate-400 text-[11px]">助走:</span>
           <select id="mobilePrerollSecSelect" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 font-mono-num font-bold focus:outline-none">
-            <option value="1">1秒前</option>
-            <option value="2" selected>2秒前</option>
-            <option value="3">3秒前</option>
-            <option value="4">4秒前</option>
-            <option value="5">5秒前</option>
+            <option value="1">1秒</option>
+            <option value="2" selected>2秒</option>
+            <option value="3">3秒</option>
+            <option value="4">4秒</option>
+            <option value="5">5秒</option>
           </select>
         </div>
       </div>
@@ -146,11 +146,11 @@
               <span>助走再生</span>
             </button>
             <select id="pcPrerollSecSelect" class="bg-transparent text-cyan-300 font-mono-num font-bold text-xs px-2 py-1 focus:outline-none cursor-pointer">
-              <option value="1" class="bg-slate-900 text-white">1秒前</option>
-              <option value="2" selected class="bg-slate-900 text-white">2秒前</option>
-              <option value="3" class="bg-slate-900 text-white">3秒前</option>
-              <option value="4" class="bg-slate-900 text-white">4秒前</option>
-              <option value="5" class="bg-slate-900 text-white">5秒前</option>
+              <option value="1" class="bg-slate-900 text-white">1秒</option>
+              <option value="2" selected class="bg-slate-900 text-white">2秒</option>
+              <option value="3" class="bg-slate-900 text-white">3秒</option>
+              <option value="4" class="bg-slate-900 text-white">4秒</option>
+              <option value="5" class="bg-slate-900 text-white">5秒</option>
             </select>
           </div>
 
@@ -281,12 +281,14 @@
       markers: [],
       nextLabelIndex: 0,
       currentMarkerIndex: -1,
-      prerollEnabled: false, // 助走再生ON/OFF
-      prerollSec: 2.0        // 助走秒数 (デフォルト2秒)
+      prerollEnabled: false,
+      prerollSec: 2.0,
+      isCountdown: false // 冒頭待機カウントダウン中か
     };
 
     let audioCtx = null;
     let isScrubbing = false;
+    let countdownTimer = null;
 
     // DOM参照
     const audioElement = document.getElementById('audioElement');
@@ -309,7 +311,7 @@
     const playhead = document.getElementById('playhead');
     const markerPinsOverlay = document.getElementById('markerPinsOverlay');
 
-    // 助走再生 (プレロール) UI
+    // 助走再生 UI
     const btnPcPrerollToggle = document.getElementById('btnPcPrerollToggle');
     const pcPrerollDot = document.getElementById('pcPrerollDot');
     const pcPrerollSecSelect = document.getElementById('pcPrerollSecSelect');
@@ -356,7 +358,7 @@
     const toastMsg = document.getElementById('toastMsg');
 
     // ==========================================
-    // 助走再生 (プレロール) コントロール同期
+    // 助走再生 (プレロール) コントロール
     // ==========================================
     function updatePrerollUI() {
       const activeClass = ['bg-emerald-950/60', 'text-emerald-300', 'border-emerald-700/60'];
@@ -390,7 +392,7 @@
       state.prerollEnabled = !state.prerollEnabled;
       updatePrerollUI();
       triggerAutoSave();
-      showToast(state.prerollEnabled ? `助走再生 ON: ${state.prerollSec}秒前から再生` : '助走再生 OFF');
+      showToast(state.prerollEnabled ? `助走再生 ON: ${state.prerollSec}秒手前・冒頭待機` : '助走再生 OFF');
     }
 
     btnPcPrerollToggle.addEventListener('click', togglePreroll);
@@ -407,6 +409,92 @@
 
     pcPrerollSecSelect.addEventListener('change', onPrerollSecChange);
     mobilePrerollSecSelect.addEventListener('change', onPrerollSecChange);
+
+    // ==========================================
+    // 冒頭待機カウントダウン & 再生ロジック
+    // ==========================================
+    function cancelCountdown() {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      state.isCountdown = false;
+      currentTimeDisplay.classList.remove('text-amber-400');
+    }
+
+    function startPlaybackWithPrerollCheck(targetSec) {
+      cancelCountdown();
+
+      if (!audioElement.src) {
+        showToast('音源を選択してください');
+        return;
+      }
+
+      // 助走再生がONで、かつ再生位置が助走秒数未満（0秒付近）の場合
+      if (state.prerollEnabled && targetSec < state.prerollSec) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        updateProgress();
+
+        state.isCountdown = true;
+        setPlaybackUI(true);
+
+        const totalWaitMs = Math.round(state.prerollSec * 1000);
+        const startTime = Date.now();
+
+        currentTimeDisplay.classList.add('text-amber-400');
+        showToast(`再生まで ${state.prerollSec} 秒待機中...`);
+
+        countdownTimer = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const remaining = Math.max(0, (totalWaitMs - elapsed) / 1000);
+
+          currentTimeDisplay.textContent = `WAIT 0${remaining.toFixed(1)}s`;
+
+          if (elapsed >= totalWaitMs) {
+            cancelCountdown();
+            currentTimeDisplay.textContent = formatTime(0);
+            audioElement.play().then(() => setPlaybackUI(true)).catch(err => console.warn(err));
+          }
+        }, 50);
+      } else {
+        // 通常の助走または助走OFF
+        const actualStartSec = (state.prerollEnabled && targetSec >= state.prerollSec)
+          ? targetSec - state.prerollSec
+          : targetSec;
+
+        audioElement.currentTime = actualStartSec;
+        audioElement.play().then(() => setPlaybackUI(true)).catch(err => console.warn(err));
+        updateProgress();
+      }
+    }
+
+    function togglePlayPause() {
+      if (!audioElement.src) {
+        showToast('音源を選択してください');
+        return;
+      }
+
+      // カウントダウン中の場合はキャンセル
+      if (state.isCountdown) {
+        cancelCountdown();
+        setPlaybackUI(false);
+        currentTimeDisplay.textContent = formatTime(audioElement.currentTime);
+        showToast('待機をキャンセルしました');
+        return;
+      }
+
+      if (audioElement.paused) {
+        // 一時停止状態から再開する場合
+        startPlaybackWithPrerollCheck(audioElement.currentTime);
+      } else {
+        audioElement.pause();
+        setPlaybackUI(false);
+      }
+    }
+
+    btnPlayPause.addEventListener('click', togglePlayPause);
+    btnPcPlayPause.addEventListener('click', togglePlayPause);
 
     // ==========================================
     // IndexedDB 自動保存システム
@@ -755,24 +843,9 @@
       }
     }
 
-    function togglePlayPause() {
-      if (!audioElement.src) {
-        showToast('音源を選択してください');
-        return;
-      }
-      if (audioElement.paused) {
-        audioElement.play().then(() => setPlaybackUI(true)).catch(err => console.warn(err));
-      } else {
-        audioElement.pause();
-        setPlaybackUI(false);
-      }
-    }
-
-    btnPlayPause.addEventListener('click', togglePlayPause);
-    btnPcPlayPause.addEventListener('click', togglePlayPause);
-
     function seekRelative(seconds) {
       if (!audioElement.src) return;
+      cancelCountdown();
       const totalSec = getAccurateDuration();
       const target = Math.max(0, Math.min(totalSec, audioElement.currentTime + seconds));
       audioElement.currentTime = target;
@@ -792,7 +865,7 @@
     });
 
     audioElement.addEventListener('timeupdate', () => {
-      if (!isScrubbing) updateProgress();
+      if (!isScrubbing && !state.isCountdown) updateProgress();
     });
 
     audioElement.addEventListener('ended', () => {
@@ -801,7 +874,9 @@
 
     function updateProgress() {
       const cur = audioElement.currentTime;
-      currentTimeDisplay.textContent = formatTime(cur);
+      if (!state.isCountdown) {
+        currentTimeDisplay.textContent = formatTime(cur);
+      }
 
       const totalSec = getAccurateDuration();
       if (totalSec > 0) {
@@ -829,6 +904,7 @@
     function handleWaveformSeek(clientX) {
       const totalSec = getAccurateDuration();
       if (!totalSec) return;
+      cancelCountdown();
       const rect = waveformContainer.getBoundingClientRect();
       const clickX = clientX - rect.left;
       const pct = Math.max(0, Math.min(1, clickX / rect.width));
@@ -847,22 +923,11 @@
       isScrubbing = false;
     });
 
-    // 助走再生を考慮したマーカージャンプ
+    // 助走再生を適用したマーカージャンプ
     function jumpToMarker(index) {
       if (!audioElement.src || !state.markers[index]) return;
-      
-      let targetSec = state.markers[index].timeMs / 1000;
-      if (state.prerollEnabled && state.prerollSec > 0) {
-        targetSec = Math.max(0, targetSec - state.prerollSec);
-      }
-
-      audioElement.currentTime = targetSec;
-      audioElement.play().then(() => setPlaybackUI(true));
-      updateProgress();
-      
-      if (state.prerollEnabled) {
-        showToast(`「${state.markers[index].label}」へ (${state.prerollSec}秒助走)`);
-      }
+      const targetSec = state.markers[index].timeMs / 1000;
+      startPlaybackWithPrerollCheck(targetSec);
     }
 
     function renderPlayTiles() {
@@ -995,15 +1060,7 @@
             renderPlayTiles();
             triggerAutoSave();
             
-            let targetSec = m.timeMs / 1000;
-            if (state.prerollEnabled && state.prerollSec > 0) {
-              targetSec = Math.max(0, targetSec - state.prerollSec);
-            }
-            if (audioElement.src) {
-              audioElement.currentTime = targetSec;
-              audioElement.play().then(() => setPlaybackUI(true));
-              updateProgress();
-            }
+            startPlaybackWithPrerollCheck(m.timeMs / 1000);
           }
         });
       });
@@ -1012,14 +1069,8 @@
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
           const m = state.markers.find(x => x.id === id);
-          if (m && audioElement.src) {
-            let targetSec = m.timeMs / 1000;
-            if (state.prerollEnabled && state.prerollSec > 0) {
-              targetSec = Math.max(0, targetSec - state.prerollSec);
-            }
-            audioElement.currentTime = targetSec;
-            audioElement.play().then(() => setPlaybackUI(true));
-            updateProgress();
+          if (m) {
+            startPlaybackWithPrerollCheck(m.timeMs / 1000);
           }
         });
       });
