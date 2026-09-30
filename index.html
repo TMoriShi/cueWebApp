@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Cue Web App - Audio Marker Tool</title>
+  <title>cueWebApp</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,10 @@
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
     }
     .font-mono-num {
       font-family: 'JetBrains Mono', monospace;
@@ -39,149 +43,151 @@
       transform: scale(0.96);
       transition: transform 0.08s ease;
     }
+    .active-tile {
+      background: #0284c7 !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-950 pb-24 md:pb-6">
 
   <!-- ヘッダー -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-2.5 pt-safe flex items-center justify-between shadow-sm">
-    <div class="flex items-center space-x-2.5">
-      <div class="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-bold text-white text-base shadow-sm">
-        C
-      </div>
-      <div>
-        <h1 class="text-sm font-bold text-white tracking-tight leading-none">cueWebApp</h1>
-        <p class="text-[11px] text-slate-400 mt-0.5">楽曲キュー / マーカー設定ツール</p>
-      </div>
+  <header class="border-b border-slate-800 bg-slate-900/95 sticky top-0 z-40 px-4 sm:px-6 py-2.5 pt-safe flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-2">
+      <span class="text-base font-bold text-white tracking-tight">cueWebApp</span>
     </div>
 
-    <!-- JSON操作ボタン群 -->
+    <!-- モード切り替え & JSON -->
     <div class="flex items-center gap-2">
-      <label class="cursor-pointer text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition flex items-center gap-1.5" title="JSONインポート">
+      <div class="flex bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+        <button id="btnModePlay" class="touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm">演奏</button>
+        <button id="btnModeEdit" class="touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200">編集</button>
+      </div>
+
+      <div class="h-4 w-px bg-slate-800 mx-0.5"></div>
+
+      <label class="cursor-pointer text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="JSONインポート">
         <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
         </svg>
-        <span>インポート</span>
+        <span class="hidden sm:inline">読込</span>
         <input type="file" id="jsonFileInput" accept=".json" class="hidden">
       </label>
 
-      <button id="downloadJsonBtn" class="text-xs px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-medium transition flex items-center gap-1.5 shadow-sm">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button id="downloadJsonBtn" class="text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 border border-slate-700 transition flex items-center gap-1.5" title="JSONエクスポート">
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
-        <span>エクスポート</span>
+        <span class="hidden sm:inline">保存</span>
       </button>
     </div>
   </header>
 
   <!-- メインコンテンツ -->
-  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+  <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-3">
 
-    <!-- 音源ロード / ファイルバー -->
-    <div id="dropZone" class="relative rounded-xl border border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/60 p-3 transition cursor-pointer">
+    <!-- 音源ロードバー -->
+    <div id="dropZone" class="relative rounded-xl border border-dashed border-slate-800 hover:border-cyan-500 bg-slate-900/40 p-2.5 transition cursor-pointer">
       <input type="file" id="audioFileInput" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
       
-      <div id="uploadPrompt" class="flex items-center justify-center gap-2 py-1 text-center">
+      <div id="uploadPrompt" class="flex items-center justify-center gap-2 py-0.5 text-center">
         <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <span class="text-xs font-semibold text-slate-300">音源ファイルを選択 または ドラッグ＆ドロップ (MP3 / WAV / M4A)</span>
+        <span class="text-xs font-semibold text-slate-300">音源を選択またはドロップ</span>
       </div>
 
       <div id="fileLoadedInfo" class="hidden flex items-center justify-between">
         <div class="flex items-center gap-2 min-w-0">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-          <p id="loadedFileName" class="text-xs font-semibold text-slate-200 truncate font-mono-num">audio.mp3</p>
+          <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+          <p id="loadedFileName" class="text-xs font-medium text-slate-200 truncate font-mono-num">audio.mp3</p>
         </div>
-        <button id="changeFileBtn" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 relative z-20 border border-slate-700">ファイル変更</button>
+        <button id="changeFileBtn" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 relative z-20 border border-slate-700">変更</button>
       </div>
     </div>
 
     <!-- プレイヤー & 波形表示 -->
-    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-sm flex flex-col gap-3">
+    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col gap-2">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-[10px] uppercase font-bold text-slate-400 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">CUE</span>
-          <span id="activeMarkerLabel" class="text-base font-bold text-cyan-400 font-mono-num">--</span>
+          <span class="text-[10px] font-bold text-slate-500 uppercase">CUE</span>
+          <span id="activeMarkerLabel" class="text-sm sm:text-base font-bold text-cyan-400 font-mono-num tracking-wide">--</span>
         </div>
         <div class="flex items-baseline gap-1.5 font-mono-num">
-          <span id="currentTimeDisplay" class="text-2xl font-bold tracking-tight text-white">00:00.000</span>
+          <span id="currentTimeDisplay" class="text-xl sm:text-2xl font-bold tracking-tight text-white">00:00.000</span>
           <span class="text-slate-600 text-xs">/</span>
           <span id="totalDurationDisplay" class="text-xs text-slate-400">00:00.000</span>
         </div>
       </div>
 
-      <!-- 波形 & 再生位置 (シーク可能) -->
-      <div class="relative w-full h-16 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 cursor-pointer select-none touch-none" id="waveformContainer">
+      <!-- 波形 & 再生位置 (正確な位置同期) -->
+      <div class="relative w-full h-16 sm:h-20 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 cursor-pointer select-none touch-none" id="waveformContainer">
         <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
-        <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-cyan-400 pointer-events-none z-20 shadow-[0_0_6px_#22d3ee]" style="left: 0%;"></div>
-        <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-10"></div>
+        <div id="playhead" class="absolute top-0 bottom-0 w-[2px] bg-cyan-400 pointer-events-none z-20 -translate-x-1/2 shadow-[0_0_8px_#22d3ee]" style="left: 0%;"></div>
+        <div id="markerPinsOverlay" class="absolute inset-0 pointer-events-none z-10 overflow-hidden"></div>
       </div>
     </div>
 
-    <!-- マーカー管理セクション -->
-    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-sm flex flex-col gap-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">マーカーリスト</h2>
-          <span id="markerCountBadge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-cyan-300 font-mono-num border border-slate-700">0</span>
+    <!-- MODE 1: 演奏モード表示 (クリーンなタイル) -->
+    <div id="playView" class="flex flex-col gap-2">
+      <div id="playTilesGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+        <div id="emptyPlayMsg" class="col-span-full py-12 text-center text-slate-500 text-xs">
+          マーカーがありません。右上の「編集」で追加してください。
         </div>
-        <div class="flex items-center gap-2">
-          <button id="sortMarkersBtn" class="touch-press text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition">
-            整列
-          </button>
-          <button id="clearAllMarkersBtn" class="touch-press text-xs px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40 font-medium transition">
-            全消去
-          </button>
+      </div>
+    </div>
+
+    <!-- MODE 2: 編集モード表示 (マーカーリスト) -->
+    <div id="editView" class="hidden flex flex-col gap-2">
+      <div class="flex items-center justify-between px-1">
+        <span class="text-xs font-semibold text-slate-400">登録マーカー (<span id="markerCountBadge">0</span>)</span>
+        <div class="flex items-center gap-1.5">
+          <button id="sortMarkersBtn" class="touch-press text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">整列</button>
+          <button id="clearAllMarkersBtn" class="touch-press text-[11px] px-2 py-1 rounded bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40">全消去</button>
         </div>
       </div>
 
-      <!-- リスト -->
-      <div id="markersList" class="flex flex-col gap-2 min-h-[160px]">
-        <div id="emptyMarkersMsg" class="py-12 px-4 rounded-lg border border-dashed border-slate-800/80 bg-slate-950/40 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-1.5">
-          <p>マーカーはまだありません</p>
-          <p class="text-[11px] text-slate-600">再生しながら [マーカー追加] ボタン、またはキーボードの [M] キーで打刻できます。</p>
+      <div id="markersList" class="flex flex-col gap-1.5">
+        <div id="emptyMarkersMsg" class="py-12 text-center text-slate-500 text-xs">
+          マーカーがありません。「追加」ボタンまたは [M] キーで打刻してください。
         </div>
       </div>
     </div>
 
   </main>
 
-  <!-- 画面下部 固定コントローラー -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-4 py-2.5 pb-safe shadow-lg">
+  <!-- ボトムコントローラー -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-4 py-2 pb-safe">
     <div class="max-w-md mx-auto flex items-center gap-2">
-      <!-- 5秒戻る -->
-      <button id="btnRewind5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒戻る (←)">
+      <button id="btnRewind5s" class="touch-press w-11 h-11 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒戻る (←)">
         <span class="text-xs font-mono-num font-bold">-5s</span>
       </button>
 
-      <!-- 再生 / 一時停止 -->
-      <button id="btnPlayPause" class="touch-press w-14 h-12 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md font-bold">
-        <svg id="playIcon" class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+      <button id="btnPlayPause" class="touch-press w-12 h-11 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0 shadow font-bold">
+        <svg id="playIcon" class="w-5 h-5 fill-current" viewBox="0 0 24 24">
           <path d="M8 5v14l11-7z" />
         </svg>
-        <svg id="pauseIcon" class="w-6 h-6 fill-current hidden" viewBox="0 0 24 24">
+        <svg id="pauseIcon" class="w-5 h-5 fill-current hidden" viewBox="0 0 24 24">
           <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
         </svg>
       </button>
 
-      <!-- 5秒進む -->
-      <button id="btnForward5s" class="touch-press w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒進む (→)">
+      <button id="btnForward5s" class="touch-press w-11 h-11 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center shrink-0" title="5秒進む (→)">
         <span class="text-xs font-mono-num font-bold">+5s</span>
       </button>
 
-      <!-- マーカー打刻 -->
-      <button id="btnAddMarkerBtn" class="touch-press flex-1 h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center justify-center gap-2 px-3 shadow-md">
+      <button id="btnAddMarkerBtn" class="touch-press flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold flex items-center justify-center gap-1.5 px-3 shadow text-xs">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
         </svg>
-        <span class="text-xs font-bold tracking-wide">マーカー追加 (M)</span>
+        <span>マーカー追加 (M)</span>
       </button>
     </div>
   </nav>
 
-  <!-- トースト通知 -->
-  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-3.5 py-1.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition duration-150 z-50 text-xs font-medium">
+  <!-- トースト -->
+  <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-800/95 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition duration-150 z-50 text-xs font-medium">
     <span id="toastMsg">通知</span>
   </div>
 
@@ -189,11 +195,13 @@
 
   <script>
     const state = {
+      mode: 'play', // 'play' | 'edit'
       audioBuffer: null,
       audioDuration: 0,
       audioFileName: 'audio',
       markers: [],
-      nextLabelIndex: 0
+      nextLabelIndex: 0,
+      currentMarkerIndex: -1
     };
 
     let audioCtx = null;
@@ -224,6 +232,13 @@
     const btnForward5s = document.getElementById('btnForward5s');
     const btnAddMarkerBtn = document.getElementById('btnAddMarkerBtn');
 
+    const btnModePlay = document.getElementById('btnModePlay');
+    const btnModeEdit = document.getElementById('btnModeEdit');
+    const playView = document.getElementById('playView');
+    const editView = document.getElementById('editView');
+    const playTilesGrid = document.getElementById('playTilesGrid');
+    const emptyPlayMsg = document.getElementById('emptyPlayMsg');
+
     const markersList = document.getElementById('markersList');
     const emptyMarkersMsg = document.getElementById('emptyMarkersMsg');
     const sortMarkersBtn = document.getElementById('sortMarkersBtn');
@@ -233,6 +248,26 @@
     const jsonFileInput = document.getElementById('jsonFileInput');
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toastMsg');
+
+    function setMode(mode) {
+      state.mode = mode;
+      if (mode === 'play') {
+        playView.classList.remove('hidden');
+        editView.classList.add('hidden');
+        btnModePlay.className = 'touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm';
+        btnModeEdit.className = 'touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200';
+        renderPlayTiles();
+      } else {
+        playView.classList.add('hidden');
+        editView.classList.remove('hidden');
+        btnModeEdit.className = 'touch-press px-3 py-1 rounded-md text-xs font-bold transition bg-cyan-600 text-white shadow-sm';
+        btnModePlay.className = 'touch-press px-3 py-1 rounded-md text-xs font-semibold transition text-slate-400 hover:text-slate-200';
+        renderMarkersList();
+      }
+    }
+
+    btnModePlay.addEventListener('click', () => setMode('play'));
+    btnModeEdit.addEventListener('click', () => setMode('edit'));
 
     function formatTime(seconds) {
       if (isNaN(seconds) || seconds < 0) seconds = 0;
@@ -265,6 +300,11 @@
       return letters[letterIdx % 26] + Math.floor(letterIdx / 26);
     }
 
+    // 正確な総再生時間を取得
+    function getAccurateDuration() {
+      return state.audioDuration || audioElement.duration || 0;
+    }
+
     async function loadAudioFile(file) {
       if (!file) return;
       state.audioFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
@@ -288,9 +328,12 @@
         state.audioDuration = state.audioBuffer.duration;
         totalDurationDisplay.textContent = formatTime(state.audioDuration);
         drawWaveform();
+        renderMarkerPins();
+        renderPlayTiles();
+        renderMarkersList();
         showToast('音源を読み込みました');
       } catch (err) {
-        console.warn('波形描画エラー:', err);
+        console.warn('波形エラー:', err);
       }
     }
 
@@ -351,26 +394,30 @@
         }
         ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
       }
-      renderMarkerPins();
     }
 
     window.addEventListener('resize', () => {
-      if (state.audioBuffer) drawWaveform();
+      if (state.audioBuffer) {
+        drawWaveform();
+        renderMarkerPins();
+      }
     });
 
+    // 波形とマーカーピンの厳密な位置同期
     function renderMarkerPins() {
       markerPinsOverlay.innerHTML = '';
-      if (!state.audioDuration) return;
+      const totalSec = getAccurateDuration();
+      if (!totalSec) return;
 
       state.markers.forEach(m => {
-        const pct = (m.timeMs / 1000 / state.audioDuration) * 100;
+        const pct = ((m.timeMs / 1000) / totalSec) * 100;
         if (pct < 0 || pct > 100) return;
 
         const pin = document.createElement('div');
-        pin.className = 'absolute top-0 bottom-0 flex flex-col items-center pointer-events-none';
+        pin.className = 'absolute top-0 bottom-0 pointer-events-none -translate-x-1/2 flex flex-col items-center';
         pin.style.left = `${pct}%`;
         pin.innerHTML = `
-          <div class="px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-bold text-[9px] transform -translate-x-1/2 shadow font-mono-num whitespace-nowrap">
+          <div class="px-1 rounded bg-amber-400 text-slate-950 font-bold text-[9px] font-mono-num leading-tight shadow">
             ${escapeHtml(m.label)}
           </div>
           <div class="w-px h-full bg-amber-400/80"></div>
@@ -406,7 +453,8 @@
 
     function seekRelative(seconds) {
       if (!audioElement.src) return;
-      const target = Math.max(0, Math.min(audioElement.duration || 0, audioElement.currentTime + seconds));
+      const totalSec = getAccurateDuration();
+      const target = Math.max(0, Math.min(totalSec, audioElement.currentTime + seconds));
       audioElement.currentTime = target;
       updateProgress();
     }
@@ -415,8 +463,10 @@
     btnForward5s.addEventListener('click', () => seekRelative(5));
 
     audioElement.addEventListener('loadedmetadata', () => {
-      state.audioDuration = audioElement.duration;
-      totalDurationDisplay.textContent = formatTime(state.audioDuration);
+      if (!state.audioDuration) {
+        state.audioDuration = audioElement.duration;
+        totalDurationDisplay.textContent = formatTime(state.audioDuration);
+      }
     });
 
     audioElement.addEventListener('timeupdate', () => {
@@ -431,30 +481,37 @@
       const cur = audioElement.currentTime;
       currentTimeDisplay.textContent = formatTime(cur);
 
-      if (state.audioDuration > 0) {
-        const pct = (cur / state.audioDuration) * 100;
+      const totalSec = getAccurateDuration();
+      if (totalSec > 0) {
+        const pct = (cur / totalSec) * 100;
         playhead.style.left = `${pct}%`;
       }
 
-      // 現在のマーカー特定
+      // 現在再生中のマーカー特定
       const curMs = cur * 1000;
-      let curLabel = '--';
+      let activeIdx = -1;
       for (let i = 0; i < state.markers.length; i++) {
-        if (curMs >= state.markers[i].timeMs - 150) {
-          curLabel = state.markers[i].label;
+        if (curMs >= state.markers[i].timeMs - 100) {
+          activeIdx = i;
         } else {
           break;
         }
       }
-      activeMarkerLabel.textContent = curLabel;
+
+      if (activeIdx !== state.currentMarkerIndex) {
+        state.currentMarkerIndex = activeIdx;
+        activeMarkerLabel.textContent = activeIdx >= 0 ? state.markers[activeIdx].label : '--';
+        highlightActiveTile(activeIdx);
+      }
     }
 
     function handleWaveformSeek(clientX) {
-      if (!state.audioDuration) return;
+      const totalSec = getAccurateDuration();
+      if (!totalSec) return;
       const rect = waveformContainer.getBoundingClientRect();
       const clickX = clientX - rect.left;
       const pct = Math.max(0, Math.min(1, clickX / rect.width));
-      audioElement.currentTime = pct * state.audioDuration;
+      audioElement.currentTime = pct * totalSec;
       updateProgress();
     }
 
@@ -468,6 +525,49 @@
     window.addEventListener('pointerup', () => {
       isScrubbing = false;
     });
+
+    function jumpToMarker(index) {
+      if (!audioElement.src || !state.markers[index]) return;
+      audioElement.currentTime = state.markers[index].timeMs / 1000;
+      audioElement.play().then(() => setPlaybackUI(true));
+      updateProgress();
+    }
+
+    // 演奏モード: タイル描画
+    function renderPlayTiles() {
+      if (state.markers.length === 0) {
+        emptyPlayMsg.classList.remove('hidden');
+        playTilesGrid.innerHTML = '';
+        playTilesGrid.appendChild(emptyPlayMsg);
+        return;
+      }
+      emptyPlayMsg.classList.add('hidden');
+      playTilesGrid.innerHTML = '';
+
+      state.markers.forEach((m, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `play-tile touch-press py-3 px-2 rounded-xl border border-slate-800 bg-slate-900/90 text-slate-200 transition flex flex-col items-center justify-center gap-0.5 ${
+          idx === state.currentMarkerIndex ? 'active-tile' : ''
+        }`;
+        btn.innerHTML = `
+          <span class="text-base font-bold font-mono-num leading-tight">${escapeHtml(m.label)}</span>
+          <span class="text-[10px] text-slate-400 font-mono-num">${formatTimeMs(m.timeMs)}</span>
+        `;
+        btn.addEventListener('click', () => jumpToMarker(idx));
+        playTilesGrid.appendChild(btn);
+      });
+    }
+
+    function highlightActiveTile(idx) {
+      const tiles = playTilesGrid.querySelectorAll('.play-tile');
+      tiles.forEach((t, i) => {
+        if (i === idx) {
+          t.classList.add('active-tile');
+        } else {
+          t.classList.remove('active-tile');
+        }
+      });
+    }
 
     function addMarkerAtCurrentTime() {
       if (!audioElement.src) {
@@ -486,13 +586,15 @@
 
       state.markers.push(newMarker);
       state.markers.sort((a, b) => a.timeMs - b.timeMs);
-      renderMarkersList();
       renderMarkerPins();
-      showToast(`マーク「${newMarker.label}」を追加`);
+      renderPlayTiles();
+      renderMarkersList();
+      showToast(`「${newMarker.label}」を追加`);
     }
 
     btnAddMarkerBtn.addEventListener('click', addMarkerAtCurrentTime);
 
+    // 編集モード: すっきりとした1行リスト
     function renderMarkersList() {
       markerCountBadge.textContent = state.markers.length;
 
@@ -507,36 +609,26 @@
       markersList.innerHTML = '';
 
       state.markers.forEach((marker, index) => {
-        const item = document.createElement('div');
-        item.className = 'rounded-lg border border-slate-800 bg-slate-950/60 p-2.5 flex items-center justify-between gap-3 text-xs';
+        const row = document.createElement('div');
+        row.className = 'rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-1.5 flex items-center justify-between gap-2 text-xs';
         
-        item.innerHTML = `
+        row.innerHTML = `
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span class="text-slate-500 font-mono-num text-[11px] w-5 text-right font-semibold">${index + 1}</span>
+            <span class="text-slate-500 font-mono-num text-[11px] w-4 text-right">${index + 1}</span>
             <input type="text" value="${escapeHtml(marker.label)}" 
               data-id="${marker.id}"
-              class="marker-label-input w-28 bg-slate-900 border border-slate-700/80 focus:border-cyan-400 focus:outline-none rounded px-2 py-1 text-slate-100 font-bold font-mono-num transition">
-            <span class="font-mono-num text-cyan-300 font-bold text-xs">${formatTimeMs(marker.timeMs)}</span>
+              class="marker-label-input w-20 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-slate-100 font-bold font-mono-num">
+            <span class="font-mono-num text-cyan-400 font-semibold">${formatTimeMs(marker.timeMs)}</span>
           </div>
 
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button data-id="${marker.id}" data-step="-100" class="btn-nudge px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700">
-              -0.1s
-            </button>
-            <button data-id="${marker.id}" data-step="100" class="btn-nudge px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700">
-              +0.1s
-            </button>
-            <button data-id="${marker.id}" class="btn-play-from px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1">
-              再生
-            </button>
-            <button data-id="${marker.id}" class="btn-delete p-1 rounded bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 transition" title="削除">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+          <div class="flex items-center gap-1 shrink-0">
+            <button data-id="${marker.id}" data-step="-100" class="btn-nudge px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-[11px]">-0.1s</button>
+            <button data-id="${marker.id}" data-step="100" class="btn-nudge px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-num border border-slate-700 text-[11px]">+0.1s</button>
+            <button data-id="${marker.id}" class="btn-play-from px-2 py-0.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-[11px]">再生</button>
+            <button data-id="${marker.id}" class="btn-delete px-1.5 py-0.5 rounded bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 text-[11px]" title="削除">✕</button>
           </div>
         `;
-        markersList.appendChild(item);
+        markersList.appendChild(row);
       });
 
       attachMarkerEvents();
@@ -550,6 +642,7 @@
           if (m) {
             m.label = e.target.value.trim() || 'Marker';
             renderMarkerPins();
+            renderPlayTiles();
           }
         });
       });
@@ -564,6 +657,7 @@
             state.markers.sort((a, b) => a.timeMs - b.timeMs);
             renderMarkersList();
             renderMarkerPins();
+            renderPlayTiles();
             if (audioElement.src) {
               audioElement.currentTime = m.timeMs / 1000;
               audioElement.play().then(() => setPlaybackUI(true));
@@ -591,6 +685,7 @@
           state.markers = state.markers.filter(x => x.id !== id);
           renderMarkersList();
           renderMarkerPins();
+          renderPlayTiles();
         });
       });
     }
@@ -599,7 +694,8 @@
       state.markers.sort((a, b) => a.timeMs - b.timeMs);
       renderMarkersList();
       renderMarkerPins();
-      showToast('時間順に並べ替えました');
+      renderPlayTiles();
+      showToast('整列しました');
     });
 
     clearAllMarkersBtn.addEventListener('click', () => {
@@ -608,10 +704,10 @@
       state.nextLabelIndex = 0;
       renderMarkersList();
       renderMarkerPins();
-      showToast('マーカーを全消去しました');
+      renderPlayTiles();
+      showToast('全消去しました');
     });
 
-    // JSON入出力
     downloadJsonBtn.addEventListener('click', () => {
       const data = {
         pieceTitle: state.audioFileName || "markers",
@@ -627,7 +723,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('JSONを保存しました');
+      showToast('保存しました');
     });
 
     jsonFileInput.addEventListener('change', (e) => {
@@ -648,16 +744,16 @@
           }
           renderMarkersList();
           renderMarkerPins();
-          showToast('JSONをインポートしました');
+          renderPlayTiles();
+          showToast('インポート完了');
         } catch (err) {
-          showToast('JSONの読み込みに失敗しました');
+          showToast('JSON読み込み失敗');
         }
       };
       reader.readAsText(file);
       e.target.value = '';
     });
 
-    // キーボードショートカット (Space: 再生/停止, M: 打刻, ←/→: 5秒シーク)
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
